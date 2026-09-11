@@ -13,9 +13,10 @@
 # アクセスせずに即終了する(Scraper側のLastFullyFinishedDateによる判定)ので、頻繁に実行しても
 # 無駄なアクセスにはならない。
 #
-# crontab例(21〜23時台は30分おき、24時・深夜1時にも念のため実行):
-#   0,30 21-23 * * * /path/to/NPBRankingPrediction/scripts/run-scraper.sh >> /var/log/npb-scraper.log 2>&1
-#   0 0,1 * * *       /path/to/NPBRankingPrediction/scripts/run-scraper.sh >> /var/log/npb-scraper.log 2>&1
+# crontab例(21〜23時台は30分おき、24時・深夜1時にも念のため実行)。
+# root以外のユーザーで実行する場合 /var/log/ は書き込めないため、$HOME 配下などに出力する:
+#   0,30 21-23 * * * /path/to/NPBRankingPrediction/scripts/run-scraper.sh >> $HOME/npb-scraper.log 2>&1
+#   0 0,1 * * *       /path/to/NPBRankingPrediction/scripts/run-scraper.sh >> $HOME/npb-scraper.log 2>&1
 
 set -euo pipefail
 

@@ -174,9 +174,11 @@ dotnet publish src/NpbRankingPrediction.Scraper -c Release -r linux-x64 --self-c
 - CPUアーキテクチャが x86_64 でない場合(Raspberry Piなどの ARM機)は `-r linux-arm64` を指定してください。
 
 ```
-0,30 21-23 * * * /path/to/NPBRankingPrediction/scripts/run-scraper.sh >> /var/log/npb-scraper.log 2>&1
-0 0,1 * * *       /path/to/NPBRankingPrediction/scripts/run-scraper.sh >> /var/log/npb-scraper.log 2>&1
+0,30 21-23 * * * /path/to/NPBRankingPrediction/scripts/run-scraper.sh >> $HOME/npb-scraper.log 2>&1
+0 0,1 * * *       /path/to/NPBRankingPrediction/scripts/run-scraper.sh >> $HOME/npb-scraper.log 2>&1
 ```
+
+root以外のユーザーでcronを実行する場合、`/var/log/` は書き込み権限が無いため、上記のようにホームディレクトリ配下などrootでなくても書き込める場所に出力してください(`$HOME` は crontab 内でもそのユーザーのホームに展開されます)。
 
 npb.jpの月別ページ(schedule_MM_detail.html)は当日分の反映に数時間〜翌日までタイムラグがあるため、Scraperはそれとは別に npb.jp の「本日の試合速報」ウィジェットも見に行き、**その日の全試合が「試合終了」(または中止)になっている場合だけ**当日分を反映します。1試合でも進行中・未開始があれば、その日は何も反映せず次回の実行を待ちます(試合途中の暫定結果が順位表に混ざるのを防ぐため)。このため、上のように21〜24時台に複数回実行しても安全です。
 
