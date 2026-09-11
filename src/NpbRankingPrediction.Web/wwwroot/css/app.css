@@ -123,6 +123,22 @@ code {
     margin: 1.5rem 0 0.75rem;
 }
 
+.date-view-picker {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    font-size: 0.875rem;
+}
+
+.date-view-picker-input {
+    font: inherit;
+    padding: 0.3rem 0.5rem;
+    border: 1px solid var(--neutral-stroke-divider-rest, #d1d1d1);
+    border-radius: 4px;
+    background: #fff;
+}
+
 .table-scroll {
     overflow-x: auto;
     margin-bottom: 1rem;

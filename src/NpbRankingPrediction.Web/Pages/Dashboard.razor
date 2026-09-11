@@ -52,7 +52,26 @@
             </p>
         }
 
-        <Leaderboard Scores="LatestPredictorScores" Predictions="predictions.Predictors" TopCount="appConfig?.LeaderboardTopCount"
+        <div class="date-view-picker mb-3">
+            <label for="viewDateInput">順位・的中を表示する日:</label>
+            <input id="viewDateInput" type="date" class="date-view-picker-input"
+                   value="@((selectedViewDate ?? LatestDate)?.ToString("yyyy-MM-dd"))"
+                   min="@MinDateText" max="@MaxDateText"
+                   @onchange="OnViewDateChanged" />
+            @if (IsViewingPastDate)
+            {
+                <FluentButton Appearance="ButtonAppearance.Outline" OnClick="ResetToLatest">最新に戻す</FluentButton>
+            }
+        </div>
+
+        @if (IsViewingPastDate)
+        {
+            <FluentMessageBar Intent="MessageBarIntent.Info" AllowDismiss="false" Class="mb-3">
+                📅 @(ViewedDate?.ToString("yyyy年M月d日"))時点の順位・的中状況を表示しています。
+            </FluentMessageBar>
+        }
+
+        <Leaderboard Scores="DisplayedPredictorScores" Names="predictorNames" TopCount="appConfig?.LeaderboardTopCount"
                      IsSeasonFinal="IsSelectedSeasonFinal"
                      Title="@(IsSelectedSeasonFinal ? "最終リーダーボード(セ・パ合計)" : "リーダーボード(セ・パ合計)")" />
 
@@ -68,14 +87,14 @@
                 <div class="section-title section-title--central mt-0">セ・リーグ</div>
                 <AnswerTable Entries="CentralEntries" />
                 <div class="prediction-table-mobile-only">
-                    <PredictionComparisonTable Entries="CentralEntries" Predictions="predictions.Predictors" Scores="LatestPredictorScores" League="League.Central" />
+                    <PredictionComparisonTable Entries="CentralEntries" Predictions="predictions.Predictors" Names="predictorNames" Scores="DisplayedPredictorScores" League="League.Central" />
                 </div>
             </div>
             <div class="league-section @(selectedLeagueTab == "pacific" ? "active" : "")">
                 <div class="section-title section-title--pacific mt-0">パ・リーグ</div>
                 <AnswerTable Entries="PacificEntries" />
                 <div class="prediction-table-mobile-only">
-                    <PredictionComparisonTable Entries="PacificEntries" Predictions="predictions.Predictors" Scores="LatestPredictorScores" League="League.Pacific" />
+                    <PredictionComparisonTable Entries="PacificEntries" Predictions="predictions.Predictors" Names="predictorNames" Scores="DisplayedPredictorScores" League="League.Pacific" />
                 </div>
             </div>
         </div>
@@ -83,7 +102,7 @@
         @* セ・パの予想表を横に並べると上の順位表の高さの違いで行がズレるため、
            デスクトップでは1つにまとめた表を使う。 *@
         <div class="prediction-table-desktop-only">
-            <CombinedPredictionComparisonTable CentralEntries="CentralEntries" PacificEntries="PacificEntries" Predictions="predictions.Predictors" Scores="LatestPredictorScores" />
+            <CombinedPredictionComparisonTable CentralEntries="CentralEntries" PacificEntries="PacificEntries" Predictions="predictions.Predictors" Names="predictorNames" Scores="DisplayedPredictorScores" />
         </div>
 
         <div class="section-title">的中数の推移</div>
@@ -179,6 +198,7 @@
     private int selectedSeason;
     private StandingsFile? standings;
     private PredictionsFile? predictions;
+    private Dictionary<string, string> predictorNames = [];
     private ScoresFile? scores;
     private AppConfig? appConfig;
     private bool isLoading = true;
@@ -190,7 +210,7 @@
     private List<string> PredictorIds => predictions?.Predictors.Keys.ToList() ?? [];
 
     private string? NameFor(string predictorId)
-        => predictions?.Predictors.TryGetValue(predictorId, out var entry) == true ? entry.Name : null;
+        => predictorNames.TryGetValue(predictorId, out var name) ? name : null;
 
     // cronが1日1回動く前提で、これより長く更新が止まっていたら異常とみなして警告する
     // (試合のない日が1日挟まっても超えない程度の余裕を持たせている)。
@@ -210,13 +230,57 @@
 
     private DateOnly? LatestDate => standings?.Snapshots.Count > 0 ? standings.Snapshots[^1].Date : null;
 
-    private List<PredictorScore> LatestPredictorScores => scores?.Snapshots.Count > 0 ? scores.Snapshots[^1].Predictors : [];
+    // null = 最新を表示。過去日を選んでいる間は「最終更新日」とは別に、その日時点のスナップショットを表示する。
+    private DateOnly? selectedViewDate;
 
-    private List<StandingsEntry> CentralEntries
-        => standings?.Snapshots.Count > 0 ? standings.Snapshots[^1].Central : [];
+    private string? MinDateText => standings?.Snapshots.Count > 0 ? standings.Snapshots[0].Date.ToString("yyyy-MM-dd") : null;
 
-    private List<StandingsEntry> PacificEntries
-        => standings?.Snapshots.Count > 0 ? standings.Snapshots[^1].Pacific : [];
+    private string? MaxDateText => LatestDate?.ToString("yyyy-MM-dd");
+
+    /// <summary>
+    /// 選んだ日にちょうど試合結果がなくても(オフ日など)、その日以前で最新のスナップショットを表示する。
+    /// 該当がなければ(選択日がシーズン開幕より前など)先頭のスナップショットにフォールバックする。
+    /// </summary>
+    private StandingsSnapshot? ViewedStandingsSnapshot
+    {
+        get
+        {
+            if (standings is null || standings.Snapshots.Count == 0)
+            {
+                return null;
+            }
+
+            if (selectedViewDate is null)
+            {
+                return standings.Snapshots[^1];
+            }
+
+            return standings.Snapshots.LastOrDefault(s => s.Date <= selectedViewDate.Value) ?? standings.Snapshots[0];
+        }
+    }
+
+    private ScoreSnapshot? ViewedScoreSnapshot
+    {
+        get
+        {
+            if (scores is null || scores.Snapshots.Count == 0 || ViewedStandingsSnapshot is null)
+            {
+                return null;
+            }
+
+            return scores.Snapshots.FirstOrDefault(s => s.Date == ViewedStandingsSnapshot.Date) ?? scores.Snapshots[^1];
+        }
+    }
+
+    private DateOnly? ViewedDate => ViewedStandingsSnapshot?.Date;
+
+    private bool IsViewingPastDate => selectedViewDate is not null && ViewedDate != LatestDate;
+
+    private List<PredictorScore> DisplayedPredictorScores => ViewedScoreSnapshot?.Predictors ?? [];
+
+    private List<StandingsEntry> CentralEntries => ViewedStandingsSnapshot?.Central ?? [];
+
+    private List<StandingsEntry> PacificEntries => ViewedStandingsSnapshot?.Pacific ?? [];
 
     private List<ScoreSnapshot> FilteredSnapshots
     {
@@ -260,9 +324,17 @@
         if (int.TryParse(selectedSeasonValue, out var season) && season != selectedSeason)
         {
             selectedSeason = season;
+            selectedViewDate = null;
             await LoadSeasonDataAsync();
         }
     }
+
+    private void OnViewDateChanged(ChangeEventArgs e)
+    {
+        selectedViewDate = DateOnly.TryParse(e.Value?.ToString(), out var date) ? date : null;
+    }
+
+    private void ResetToLatest() => selectedViewDate = null;
 
     private async Task LoadSeasonDataAsync()
     {
@@ -274,20 +346,8 @@
         scores = await SeasonData.LoadScoresAsync(selectedSeason);
 
         // predictor-names.json はローカル専用(.gitignore対象)なので、GitHub Pages上では
-        // 取得できず空辞書が返る。その場合はpredictions.json側のName("")のまま=背番号のみ表示になる。
-        if (predictions is not null)
-        {
-            var names = await SeasonData.LoadPredictorNamesAsync(selectedSeason);
-            if (names.Count > 0)
-            {
-                predictions = predictions with
-                {
-                    Predictors = predictions.Predictors.ToDictionary(
-                        kv => kv.Key,
-                        kv => names.TryGetValue(kv.Key, out var realName) ? kv.Value with { Name = realName } : kv.Value),
-                };
-            }
-        }
+        // 取得できず空辞書が返る。その場合は各コンポーネントで背番号のみの表示にフォールバックする。
+        predictorNames = await SeasonData.LoadPredictorNamesAsync(selectedSeason);
 
         BuildChartOptions();
 

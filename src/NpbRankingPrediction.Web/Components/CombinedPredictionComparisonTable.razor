@@ -86,6 +86,9 @@
     [Parameter, EditorRequired]
     public Dictionary<string, PredictionEntry> Predictions { get; set; } = [];
 
+    [Parameter]
+    public Dictionary<string, string> Names { get; set; } = [];
+
     [Parameter, EditorRequired]
     public List<PredictorScore> Scores { get; set; } = [];
 
@@ -126,5 +129,5 @@
         => Scores.FirstOrDefault(s => s.PredictorId == predictorId)?.IsCarryoverClear ?? false;
 
     private string NameFor(string predictorId)
-        => Predictions.TryGetValue(predictorId, out var entry) ? entry.Name : "";
+        => Names.TryGetValue(predictorId, out var name) ? name : "";
 }
