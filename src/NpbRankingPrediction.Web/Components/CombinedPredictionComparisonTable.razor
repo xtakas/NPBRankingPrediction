@@ -37,7 +37,8 @@
                     {
                         var predictedTeam = PredictedTeamAt(id, League.Central, rank);
                         var isHit = predictedTeam is not null && predictedTeam == ActualTeamAt(League.Central, rank);
-                        <td class="text-center league-col-central @(isHit ? "cell-hit" : "")">
+                        var isConfirmedHit = isHit && IsRankConfirmedAt(League.Central, rank);
+                        <td class="text-center league-col-central @(isConfirmedHit ? "cell-hit-confirmed" : isHit ? "cell-hit" : "")">
                             @if (predictedTeam is not null)
                             {
                                 <TeamBadge TeamCode="@predictedTeam" ShowFullName="false" />
@@ -52,7 +53,8 @@
                     {
                         var predictedTeam = PredictedTeamAt(id, League.Pacific, rank);
                         var isHit = predictedTeam is not null && predictedTeam == ActualTeamAt(League.Pacific, rank);
-                        <td class="text-center league-col-pacific @(isHit ? "cell-hit" : "")">
+                        var isConfirmedHit = isHit && IsRankConfirmedAt(League.Pacific, rank);
+                        <td class="text-center league-col-pacific @(isConfirmedHit ? "cell-hit-confirmed" : isHit ? "cell-hit" : "")">
                             @if (predictedTeam is not null)
                             {
                                 <TeamBadge TeamCode="@predictedTeam" ShowFullName="false" />
@@ -91,6 +93,9 @@
 
     private string? ActualTeamAt(League league, int rank)
         => (league == League.Central ? CentralEntries : PacificEntries).FirstOrDefault(e => e.Rank == rank)?.TeamCode;
+
+    private bool IsRankConfirmedAt(League league, int rank)
+        => (league == League.Central ? CentralEntries : PacificEntries).FirstOrDefault(e => e.Rank == rank)?.IsRankConfirmed ?? false;
 
     private string? PredictedTeamAt(string predictorId, League league, int rank)
     {

@@ -61,7 +61,8 @@ public static class StandingsCalculator
                 var (wins, losses, draws) = record[t.Code];
                 var decidedGames = wins + losses;
                 var winPercentage = decidedGames == 0 ? 0.0 : (double)wins / decidedGames;
-                return (Team: t, Wins: wins, Losses: losses, Draws: draws, WinPercentage: winPercentage);
+                var remaining = Math.Max(0, RegularSeasonGameCount - (wins + losses + draws));
+                return new TeamTally(t, wins, losses, draws, winPercentage, remaining);
             })
             .OrderByDescending(x => x.WinPercentage)
             .ThenByDescending(x => x.Wins)
@@ -75,8 +76,39 @@ public static class StandingsCalculator
             {
                 // ゲーム差 = ((首位の勝数 - 自チームの勝数) + (自チームの敗数 - 首位の敗数)) / 2
                 var gamesBehind = ((leader.Wins - x.Wins) + (x.Losses - leader.Losses)) / 2.0;
-                return new StandingsEntry(x.Team.Code, index + 1, x.Wins, x.Losses, x.Draws, x.WinPercentage, gamesBehind);
+
+                // 直上・直下の相手との2者間だけを見た簡易判定(3チーム以上が絡む一斉逆転までは考慮しない)。
+                var isRankConfirmed =
+                    (index == 0 || IsBoundaryConfirmed(ordered[index - 1], x)) &&
+                    (index == ordered.Count - 1 || IsBoundaryConfirmed(x, ordered[index + 1]));
+
+                return new StandingsEntry(x.Team.Code, index + 1, x.Wins, x.Losses, x.Draws, x.WinPercentage, gamesBehind, isRankConfirmed);
             })
             .ToList();
+    }
+
+    // NPBのレギュラーシーズンは143試合制。対戦相手までは考慮しないため、
+    // 実際の残り対戦カード(スケジュール)を取得しない前提での近似値として使う。
+    private const int RegularSeasonGameCount = 143;
+
+    private readonly record struct TeamTally(Team Team, int Wins, int Losses, int Draws, double WinPercentage, int Remaining);
+
+    /// <summary>
+    /// higherが残り全敗、lowerが残り全勝という最悪ケースでもhigherの勝率がlowerを上回っているかどうか。
+    /// これが真であれば、両チームの間の順位はこの先の結果によらず変わらないとみなす(簡易判定)。
+    /// </summary>
+    private static bool IsBoundaryConfirmed(TeamTally higher, TeamTally lower)
+    {
+        var higherWorstWins = higher.Wins;
+        var higherWorstLosses = higher.Losses + higher.Remaining;
+        var higherWorstDecided = higherWorstWins + higherWorstLosses;
+        var higherWorstPct = higherWorstDecided == 0 ? 0.0 : (double)higherWorstWins / higherWorstDecided;
+
+        var lowerBestWins = lower.Wins + lower.Remaining;
+        var lowerBestLosses = lower.Losses;
+        var lowerBestDecided = lowerBestWins + lowerBestLosses;
+        var lowerBestPct = lowerBestDecided == 0 ? 0.0 : (double)lowerBestWins / lowerBestDecided;
+
+        return higherWorstPct > lowerBestPct;
     }
 }

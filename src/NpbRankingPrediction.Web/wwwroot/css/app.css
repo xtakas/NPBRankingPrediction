@@ -175,6 +175,15 @@ code {
     border-radius: 4px;
 }
 
+/* 的中していても、残り試合数から見てまだ順位が変わり得る間は緑(cell-hit)。
+   残り試合の結果によらずこの順位が変わらないと判定できたら(StandingsEntry.IsRankConfirmed)、
+   確定した的中として金色に切り替える。 */
+.cell-hit-confirmed {
+    background: #ffe1a8;
+    box-shadow: inset 0 0 0 2px #d98c1f;
+    border-radius: 4px;
+}
+
 .team-badge {
     display: inline-flex;
     align-items: center;
@@ -257,6 +266,21 @@ code {
     width: 3.6rem;
 }
 
+/* モバイルのリーグ別表(.comparison-table--combinedではない方)は1〜6位の列が狭く、
+   既定サイズ(1.6rem)のバッジがセル幅をはみ出して隣の列に食い込み、的中セルの緑の枠(cell-hit)が
+   バッジとズレて見える原因になっていた。列パディングを詰め、バッジ自体も縮小してセル内に収める。 */
+.comparison-table:not(.comparison-table--combined) th:nth-child(n+2):nth-child(-n+7),
+.comparison-table:not(.comparison-table--combined) td:nth-child(n+2):nth-child(-n+7) {
+    padding-left: 0.15rem;
+    padding-right: 0.15rem;
+}
+
+.comparison-table:not(.comparison-table--combined) td:nth-child(n+2):nth-child(-n+7) .team-badge {
+    width: 1.3rem;
+    height: 1.3rem;
+    font-size: 0.62rem;
+}
+
 /* セ・パのセクション: スマホなど狭い画面ではタブで1リーグずつ、PCなど広い画面(992px以上)では
    タブを隠して2カラムで横並び表示する。 */
 .league-section {
@@ -333,6 +357,11 @@ code {
 .comparison-table--combined td.league-col-central.cell-hit,
 .comparison-table--combined td.league-col-pacific.cell-hit {
     background: #bfe8cc;
+}
+
+.comparison-table--combined td.league-col-central.cell-hit-confirmed,
+.comparison-table--combined td.league-col-pacific.cell-hit-confirmed {
+    background: #ffe1a8;
 }
 
 /* モバイル(リーグ別)の表もリーグ色を薄く敷いて、今どちらのリーグを見ているか強調する。 */

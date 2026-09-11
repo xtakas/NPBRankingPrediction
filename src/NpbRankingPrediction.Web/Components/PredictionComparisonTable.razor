@@ -28,7 +28,8 @@
                     {
                         var predictedTeam = PredictedTeamAt(id, rank);
                         var isHit = predictedTeam is not null && predictedTeam == ActualTeamAt(rank);
-                        <td class="text-center @(isHit ? "cell-hit" : "")">
+                        var isConfirmedHit = isHit && IsRankConfirmedAt(rank);
+                        <td class="text-center @(isConfirmedHit ? "cell-hit-confirmed" : isHit ? "cell-hit" : "")">
                             @if (predictedTeam is not null)
                             {
                                 <TeamBadge TeamCode="@predictedTeam" ShowFullName="false" />
@@ -65,6 +66,8 @@
     private List<string> PredictorIds => Predictions.Keys.ToList();
 
     private string? ActualTeamAt(int rank) => Entries.FirstOrDefault(e => e.Rank == rank)?.TeamCode;
+
+    private bool IsRankConfirmedAt(int rank) => Entries.FirstOrDefault(e => e.Rank == rank)?.IsRankConfirmed ?? false;
 
     private string? PredictedTeamAt(string predictorId, int rank)
     {
