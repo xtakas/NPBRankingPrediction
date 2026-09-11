@@ -1,0 +1,35 @@
+<div class="table-scroll">
+    <table class="fluent-table standings-table">
+        <thead>
+            <tr>
+                <th class="text-center">順位</th>
+                <th>チーム名</th>
+                <th class="text-center">勝</th>
+                <th class="text-center">敗</th>
+                <th class="text-center">分</th>
+                <th class="text-center">ゲーム差</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var entry in Entries)
+            {
+                <tr>
+                    <td class="text-center">@entry.Rank</td>
+                    <td><TeamBadge TeamCode="@entry.TeamCode" /></td>
+                    <td class="text-center">@entry.Wins</td>
+                    <td class="text-center">@entry.Losses</td>
+                    <td class="text-center">@entry.Draws</td>
+                    <td class="text-center">@FormatGamesBehind(entry.GamesBehind)</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public List<StandingsEntry> Entries { get; set; } = [];
+
+    private static string FormatGamesBehind(double gamesBehind)
+        => gamesBehind == 0 ? "-" : gamesBehind.ToString("0.0");
+}

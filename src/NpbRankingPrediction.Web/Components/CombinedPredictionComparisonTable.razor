@@ -1,0 +1,125 @@
+@*
+    デスクトップ向け: セ・リーグとパ・リーグの予想を1つの表にまとめて表示する。
+    セ・パを別々の表で横に並べると、上に置かれる順位表(AnswerTable)の高さの違いにより
+    予想者の行の高さがズレて見えてしまうため、1つの表に統合してズレをなくす。
+*@
+<div class="table-scroll">
+    <table class="fluent-table comparison-table comparison-table--combined">
+        <thead>
+            <tr>
+                <th rowspan="2">予想者</th>
+                <th colspan="@RankCount" class="text-center league-group-header league-group-header--central">セ・リーグ</th>
+                <th colspan="@RankCount" class="text-center league-group-header league-group-header--pacific">パ・リーグ</th>
+                <th rowspan="2" class="text-center league-accent league-accent--central">的中(セ)</th>
+                <th rowspan="2" class="text-center league-accent league-accent--pacific">的中(パ)</th>
+                <th rowspan="2" class="text-center total-column">合計</th>
+            </tr>
+            <tr>
+                @for (var rank = 1; rank <= RankCount; rank++)
+                {
+                    <th class="text-center league-col-central">@rank 位</th>
+                }
+                @for (var rank = 1; rank <= RankCount; rank++)
+                {
+                    <th class="text-center league-col-pacific">@rank 位</th>
+                }
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var id in PredictorIds)
+            {
+                <tr>
+                    <td>
+                        <span class="predictor-badge" title="@($"#{id}")">@id</span>
+                        <span class="predictor-name">@NameFor(id)</span>
+                    </td>
+                    @for (var rank = 1; rank <= RankCount; rank++)
+                    {
+                        var predictedTeam = PredictedTeamAt(id, League.Central, rank);
+                        var isHit = predictedTeam is not null && predictedTeam == ActualTeamAt(League.Central, rank);
+                        <td class="text-center league-col-central @(isHit ? "cell-hit" : "")">
+                            @if (predictedTeam is not null)
+                            {
+                                <TeamBadge TeamCode="@predictedTeam" ShowFullName="false" />
+                            }
+                            else
+                            {
+                                <span>-</span>
+                            }
+                        </td>
+                    }
+                    @for (var rank = 1; rank <= RankCount; rank++)
+                    {
+                        var predictedTeam = PredictedTeamAt(id, League.Pacific, rank);
+                        var isHit = predictedTeam is not null && predictedTeam == ActualTeamAt(League.Pacific, rank);
+                        <td class="text-center league-col-pacific @(isHit ? "cell-hit" : "")">
+                            @if (predictedTeam is not null)
+                            {
+                                <TeamBadge TeamCode="@predictedTeam" ShowFullName="false" />
+                            }
+                            else
+                            {
+                                <span>-</span>
+                            }
+                        </td>
+                    }
+                    <td class="text-center fw-bold">@MatchesFor(id, League.Central) / @RankCount</td>
+                    <td class="text-center fw-bold">@MatchesFor(id, League.Pacific) / @RankCount</td>
+                    <td class="text-center total-column @(IsCarryoverClear(id) ? "cell-hit fw-bold" : "")">@TotalMatchesFor(id) / 12</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    private const int RankCount = 6;
+
+    [Parameter, EditorRequired]
+    public List<StandingsEntry> CentralEntries { get; set; } = [];
+
+    [Parameter, EditorRequired]
+    public List<StandingsEntry> PacificEntries { get; set; } = [];
+
+    [Parameter, EditorRequired]
+    public Dictionary<string, PredictionEntry> Predictions { get; set; } = [];
+
+    [Parameter, EditorRequired]
+    public List<PredictorScore> Scores { get; set; } = [];
+
+    private List<string> PredictorIds => Predictions.Keys.ToList();
+
+    private string? ActualTeamAt(League league, int rank)
+        => (league == League.Central ? CentralEntries : PacificEntries).FirstOrDefault(e => e.Rank == rank)?.TeamCode;
+
+    private string? PredictedTeamAt(string predictorId, League league, int rank)
+    {
+        if (!Predictions.TryGetValue(predictorId, out var entry))
+        {
+            return null;
+        }
+
+        var order = league == League.Central ? entry.Central : entry.Pacific;
+        return rank >= 1 && rank <= order.Count ? order[rank - 1] : null;
+    }
+
+    private int MatchesFor(string predictorId, League league)
+    {
+        var score = Scores.FirstOrDefault(s => s.PredictorId == predictorId);
+        if (score is null)
+        {
+            return 0;
+        }
+
+        return league == League.Central ? score.CentralMatches : score.PacificMatches;
+    }
+
+    private int TotalMatchesFor(string predictorId)
+        => Scores.FirstOrDefault(s => s.PredictorId == predictorId)?.TotalMatches ?? 0;
+
+    private bool IsCarryoverClear(string predictorId)
+        => Scores.FirstOrDefault(s => s.PredictorId == predictorId)?.IsCarryoverClear ?? false;
+
+    private string NameFor(string predictorId)
+        => Predictions.TryGetValue(predictorId, out var entry) ? entry.Name : "";
+}

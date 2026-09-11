@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Blazor-ApexCharts" Version="7.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.12" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="10.0.12" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.FluentUI.AspNetCore.Components" Version="5.0.0-rc.5-26219.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\NpbRankingPrediction.Core\NpbRankingPrediction.Core.csproj" />
+  </ItemGroup>
+
+  <!-- リポジトリ直下のdata/(スクレイパーが更新するJSON)をwwwroot/dataに同期し、
+       ローカル実行・ビルド・発行のいずれでも常に最新データをフロントエンドから参照できるようにする -->
+  <Target Name="CopySeasonData" BeforeTargets="BeforeBuild;Publish">
+    <ItemGroup>
+      <SeasonDataFiles Include="$(MSBuildProjectDirectory)\..\..\data\**\*.json" />
+    </ItemGroup>
+    <Copy SourceFiles="@(SeasonDataFiles)" DestinationFolder="$(MSBuildProjectDirectory)\wwwroot\data\%(RecursiveDir)" SkipUnchangedFiles="true" />
+  </Target>
+
+</Project>

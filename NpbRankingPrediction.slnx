@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/NpbRankingPrediction.Core/NpbRankingPrediction.Core.csproj" />
+    <Project Path="src/NpbRankingPrediction.Scraper/NpbRankingPrediction.Scraper.csproj" />
+    <Project Path="src/NpbRankingPrediction.Web/NpbRankingPrediction.Web.csproj" />
+  </Folder>
+</Solution>

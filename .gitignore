@@ -1,0 +1,18 @@
+## .NET
+bin/
+obj/
+publish_output/
+
+## Blazor: data/ is copied into wwwroot/data at build time; the canonical copy lives at repo root /data
+src/NpbRankingPrediction.Web/wwwroot/data/
+
+## Predictor real names: local-only, never committed so GitHub/GitHub Pages only ever show badge numbers
+data/*/predictor-names.json
+
+## IDE / tooling
+.vs/
+.vscode/
+*.user
+
+## Claude Code
+.claude/

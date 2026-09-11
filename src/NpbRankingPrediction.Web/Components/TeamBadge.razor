@@ -1,0 +1,22 @@
+@if (team is not null)
+{
+    <span class="team-badge" style="background-color:@team.ColorHex;color:@team.TextColorHex">@team.Abbreviation</span>
+    @if (ShowFullName)
+    {
+        <span class="team-fullname">@team.FullName</span>
+    }
+}
+else
+{
+    <span>@TeamCode</span>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public string TeamCode { get; set; } = "";
+
+    [Parameter]
+    public bool ShowFullName { get; set; } = true;
+
+    private Team? team => TeamCatalog.FindByCode(TeamCode);
+}

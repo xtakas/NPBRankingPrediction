@@ -1,0 +1,357 @@
+@page "/"
+@inject SeasonDataService SeasonData
+
+<PageTitle>NPB順位予想 的中トラッカー</PageTitle>
+
+<div class="page-shell">
+    <FluentStack Orientation="Microsoft.FluentUI.AspNetCore.Components.Orientation.Horizontal" HorizontalAlignment="HorizontalAlignment.SpaceBetween" VerticalAlignment="VerticalAlignment.Center" Wrap="true" Class="mb-3">
+        <h1>NPB順位予想 的中トラッカー</h1>
+        @if (seasons.Count > 1)
+        {
+            <FluentSelect TOption="SeasonInfo" TValue="string"
+                          Items="@seasons"
+                          OptionValue="@(s => s.Season.ToString())"
+                          OptionText="@(s => $"{s.Season}年シーズン{(s.IsFinal ? "(確定)" : "")}")"
+                          @bind-Value="selectedSeasonValue"
+                          @bind-Value:after="OnSeasonValueChanged" />
+        }
+    </FluentStack>
+
+    @if (isLoading)
+    {
+        <p>読み込み中...</p>
+    }
+    else if (standings is null || predictions is null || scores is null || standings.Snapshots.Count == 0)
+    {
+        <FluentMessageBar Intent="MessageBarIntent.Warning" Title="データがありません" AllowDismiss="false">
+            @(selectedSeason)年シーズンのデータがまだありません。predictions.json が配置されているか、スクレイパーが実行済みか確認してください。
+        </FluentMessageBar>
+    }
+    else
+    {
+        @if (IsSelectedSeasonFinal)
+        {
+            <FluentMessageBar Intent="MessageBarIntent.Success" AllowDismiss="false" Class="mb-3">
+                ✓ @(selectedSeason)年シーズン 最終順位確定(@LatestDate?.ToString("yyyy年M月d日"))
+            </FluentMessageBar>
+        }
+        else
+        {
+            @if (IsScrapeStale)
+            {
+                <FluentMessageBar Intent="MessageBarIntent.Warning" AllowDismiss="false" Class="mb-3">
+                    ⚠ 順位データの自動更新が @StaleHoursText 時間以上止まっている可能性があります(自宅サーバーのcronをご確認ください)。
+                </FluentMessageBar>
+            }
+            <p class="muted-text">
+                最終更新日: @(LatestDate?.ToString("yyyy年M月d日"))時点の順位(シーズン進行中)
+                @if (LastScrapedAtLocalText is not null)
+                {
+                    <text> ・ データ取得: @LastScrapedAtLocalText</text>
+                }
+            </p>
+        }
+
+        <Leaderboard Scores="LatestPredictorScores" Predictions="predictions.Predictors" TopCount="appConfig?.LeaderboardTopCount"
+                     IsSeasonFinal="IsSelectedSeasonFinal"
+                     Title="@(IsSelectedSeasonFinal ? "最終リーダーボード(セ・パ合計)" : "リーダーボード(セ・パ合計)")" />
+
+        <div class="league-tabs-mobile-only">
+            <FluentTabs @bind-ActiveTabId="selectedLeagueTab" Class="mb-3">
+                <FluentTab Id="central" Header="セ・リーグ" />
+                <FluentTab Id="pacific" Header="パ・リーグ" />
+            </FluentTabs>
+        </div>
+
+        <div class="league-columns">
+            <div class="league-section @(selectedLeagueTab == "central" ? "active" : "")">
+                <div class="section-title section-title--central mt-0">セ・リーグ</div>
+                <AnswerTable Entries="CentralEntries" />
+                <div class="prediction-table-mobile-only">
+                    <PredictionComparisonTable Entries="CentralEntries" Predictions="predictions.Predictors" Scores="LatestPredictorScores" League="League.Central" />
+                </div>
+            </div>
+            <div class="league-section @(selectedLeagueTab == "pacific" ? "active" : "")">
+                <div class="section-title section-title--pacific mt-0">パ・リーグ</div>
+                <AnswerTable Entries="PacificEntries" />
+                <div class="prediction-table-mobile-only">
+                    <PredictionComparisonTable Entries="PacificEntries" Predictions="predictions.Predictors" Scores="LatestPredictorScores" League="League.Pacific" />
+                </div>
+            </div>
+        </div>
+
+        @* セ・パの予想表を横に並べると上の順位表の高さの違いで行がズレるため、
+           デスクトップでは1つにまとめた表を使う。 *@
+        <div class="prediction-table-desktop-only">
+            <CombinedPredictionComparisonTable CentralEntries="CentralEntries" PacificEntries="PacificEntries" Predictions="predictions.Predictors" Scores="LatestPredictorScores" />
+        </div>
+
+        <div class="section-title">的中数の推移</div>
+        <FluentStack Orientation="Microsoft.FluentUI.AspNetCore.Components.Orientation.Horizontal" HorizontalAlignment="HorizontalAlignment.SpaceBetween" VerticalAlignment="VerticalAlignment.Center" Wrap="true" Class="mb-3">
+            <FluentStack Orientation="Microsoft.FluentUI.AspNetCore.Components.Orientation.Horizontal" HorizontalGap="4" Wrap="true">
+                @foreach (var tab in Tabs)
+                {
+                    <FluentButton Appearance="@(tab.Key == selectedTab ? ButtonAppearance.Primary : ButtonAppearance.Outline)" OnClick="@(() => SelectTab(tab.Key))">
+                        @tab.Value
+                    </FluentButton>
+                }
+            </FluentStack>
+            <FluentStack Orientation="Microsoft.FluentUI.AspNetCore.Components.Orientation.Horizontal" HorizontalGap="4" Wrap="true">
+                @foreach (var range in RangeOptions)
+                {
+                    <FluentButton Appearance="@(range.Days == selectedRangeDays ? ButtonAppearance.Primary : ButtonAppearance.Outline)" OnClick="@(() => selectedRangeDays = range.Days)">
+                        @range.Label
+                    </FluentButton>
+                }
+            </FluentStack>
+        </FluentStack>
+
+        <div class="mb-4">
+            <ApexChart TItem="ScoreSnapshot" Title="@Tabs[selectedTab]" Options="chartOptions" @key="(selectedTab, selectedRangeDays)">
+                @for (var i = 0; i < PredictorIds.Count; i++)
+                {
+                    var id = PredictorIds[i];
+                    var color = SeriesColorFor(i);
+                    var dashSpace = SeriesDashFor(i);
+                    var seriesName = NameFor(id) is { Length: > 0 } n ? $"#{id} {n}" : $"#{id}";
+                    <ApexPointSeries TItem="ScoreSnapshot"
+                                     Items="FilteredSnapshots"
+                                     Name="@seriesName"
+                                     SeriesType="SeriesType.Line"
+                                     Color="@color"
+                                     Stroke="@(new SeriesStroke { Color = color, Width = 2, DashSpace = dashSpace })"
+                                     XValue='s => s.Date.ToString("yyyy-MM-dd")'
+                                     YValue="s => (decimal)MatchesFor(s, id)" />
+                }
+            </ApexChart>
+        </div>
+    }
+</div>
+
+@code {
+    private static readonly Dictionary<string, string> Tabs = new()
+    {
+        ["total"] = "合計 (12球団)",
+        ["central"] = "セ・リーグ",
+        ["pacific"] = "パ・リーグ",
+    };
+
+    private static readonly List<(string Label, int? Days)> RangeOptions =
+    [
+        ("2週間", 14),
+        ("1ヶ月", 30),
+        ("3ヶ月", 90),
+        ("全期間", null),
+    ];
+
+    // 検証済みカテゴリカルパレット(16色・固定順)。validate_palette.js(dataviz skill)で
+    // ライトサーフェス(#fcfcfb)に対しライトネス帯・彩度下限・コントラスト・CVD分離を確認済み。
+    // #0d8a5f(11)↔#b8562a(10) の1ペアのみ色覚シミュレーション上ΔE7.7(6〜8のWARN帯)のため、
+    // secondary encodingとして奇数インデックスの系列は破線にして線種でも区別できるようにしている。
+    private static readonly string[] SeriesColors =
+    [
+        "#2a78d6", // 1  blue
+        "#eb6834", // 2  orange
+        "#1baf7a", // 3  aqua
+        "#eda100", // 4  gold
+        "#e87ba4", // 5  magenta
+        "#008300", // 6  green
+        "#4a3aa7", // 7  violet
+        "#e34948", // 8  red
+        "#17a3c2", // 9  cyan
+        "#b8562a", // 10 rust
+        "#0d8a5f", // 11 teal-green
+        "#7a3a99", // 12 purple
+        "#c23c6e", // 13 rose
+        "#6b8a1f", // 14 chartreuse
+        "#2c5aa0", // 15 navy
+        "#8a7c00", // 16 olive
+    ];
+
+    private static string SeriesColorFor(int index) => SeriesColors[index % SeriesColors.Length];
+
+    // 16色でも隣接色が近く見えるペアが残るため(検証済みだがCVD上ぎりぎりの1ペアあり)、
+    // 1つ飛ばしで破線にして色以外でも見分けられるようにする。
+    private static int SeriesDashFor(int index) => index % 2 == 0 ? 0 : 6;
+
+    private List<SeasonInfo> seasons = [];
+    private string? selectedSeasonValue;
+    private int selectedSeason;
+    private StandingsFile? standings;
+    private PredictionsFile? predictions;
+    private ScoresFile? scores;
+    private AppConfig? appConfig;
+    private bool isLoading = true;
+    private string selectedTab = "total";
+    private string selectedLeagueTab = "central";
+    private int? selectedRangeDays;
+    private ApexChartOptions<ScoreSnapshot> chartOptions = new();
+
+    private List<string> PredictorIds => predictions?.Predictors.Keys.ToList() ?? [];
+
+    private string? NameFor(string predictorId)
+        => predictions?.Predictors.TryGetValue(predictorId, out var entry) == true ? entry.Name : null;
+
+    // cronが1日1回動く前提で、これより長く更新が止まっていたら異常とみなして警告する
+    // (試合のない日が1日挟まっても超えない程度の余裕を持たせている)。
+    private const int StaleThresholdHours = 36;
+
+    private bool IsSelectedSeasonFinal => seasons.FirstOrDefault(s => s.Season == selectedSeason)?.IsFinal ?? false;
+
+    private DateTimeOffset? LastScrapedAtUtc => seasons.FirstOrDefault(s => s.Season == selectedSeason)?.LastScrapedAtUtc;
+
+    private string? LastScrapedAtLocalText
+        => LastScrapedAtUtc?.ToLocalTime().ToString("M月d日 H:mm");
+
+    private bool IsScrapeStale
+        => LastScrapedAtUtc is { } scrapedAt && DateTimeOffset.UtcNow - scrapedAt > TimeSpan.FromHours(StaleThresholdHours);
+
+    private int StaleHoursText => StaleThresholdHours;
+
+    private DateOnly? LatestDate => standings?.Snapshots.Count > 0 ? standings.Snapshots[^1].Date : null;
+
+    private List<PredictorScore> LatestPredictorScores => scores?.Snapshots.Count > 0 ? scores.Snapshots[^1].Predictors : [];
+
+    private List<StandingsEntry> CentralEntries
+        => standings?.Snapshots.Count > 0 ? standings.Snapshots[^1].Central : [];
+
+    private List<StandingsEntry> PacificEntries
+        => standings?.Snapshots.Count > 0 ? standings.Snapshots[^1].Pacific : [];
+
+    private List<ScoreSnapshot> FilteredSnapshots
+    {
+        get
+        {
+            if (scores is null)
+            {
+                return [];
+            }
+
+            if (selectedRangeDays is null || LatestDate is null)
+            {
+                return scores.Snapshots;
+            }
+
+            var from = LatestDate.Value.AddDays(-selectedRangeDays.Value);
+            return scores.Snapshots.Where(s => s.Date >= from).ToList();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        appConfig = await SeasonData.LoadConfigAsync();
+        selectedRangeDays = appConfig.ChartDefaultRangeDays ?? 30;
+
+        seasons = await SeasonData.LoadSeasonsAsync();
+        if (seasons.Count > 0)
+        {
+            selectedSeason = seasons.Max(s => s.Season);
+            selectedSeasonValue = selectedSeason.ToString();
+            await LoadSeasonDataAsync();
+        }
+        else
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task OnSeasonValueChanged()
+    {
+        if (int.TryParse(selectedSeasonValue, out var season) && season != selectedSeason)
+        {
+            selectedSeason = season;
+            await LoadSeasonDataAsync();
+        }
+    }
+
+    private async Task LoadSeasonDataAsync()
+    {
+        isLoading = true;
+        StateHasChanged();
+
+        standings = await SeasonData.LoadStandingsAsync(selectedSeason);
+        predictions = await SeasonData.LoadPredictionsAsync(selectedSeason);
+        scores = await SeasonData.LoadScoresAsync(selectedSeason);
+
+        // predictor-names.json はローカル専用(.gitignore対象)なので、GitHub Pages上では
+        // 取得できず空辞書が返る。その場合はpredictions.json側のName("")のまま=背番号のみ表示になる。
+        if (predictions is not null)
+        {
+            var names = await SeasonData.LoadPredictorNamesAsync(selectedSeason);
+            if (names.Count > 0)
+            {
+                predictions = predictions with
+                {
+                    Predictors = predictions.Predictors.ToDictionary(
+                        kv => kv.Key,
+                        kv => names.TryGetValue(kv.Key, out var realName) ? kv.Value with { Name = realName } : kv.Value),
+                };
+            }
+        }
+
+        BuildChartOptions();
+
+        isLoading = false;
+    }
+
+    private void SelectTab(string tab)
+    {
+        selectedTab = tab;
+        BuildChartOptions();
+    }
+
+    private void BuildChartOptions()
+    {
+        // アニメーションを無効化しないと、Yaxisアノテーションが初期のフェードイン状態のまま
+        // opacity:0で固まって表示されない不具合が起きるため明示的に無効化する。
+        var maxMatches = selectedTab == "total" ? 12 : 6;
+
+        var options = new ApexChartOptions<ScoreSnapshot>
+        {
+            // 既定の高さだとスマホ幅では縦が潰れて見づらいため、明示的に高さを確保する。
+            Chart = new Chart { Animations = new Animations { Enabled = false }, Height = "420" },
+            // 表示期間を絞ると最大値が小さくなり自動スケールでキャリーオーバーラインが
+            // プロット範囲外に出てしまうため、Y軸を常に0〜最大値で固定する。
+            Yaxis = [new YAxis { Min = 0, Max = maxMatches }],
+        };
+
+        if (selectedTab == "total")
+        {
+            options.Annotations = new Annotations
+            {
+                Yaxis =
+                [
+                    new AnnotationsYAxis
+                    {
+                        Y = ScoringCalculator.CarryoverThreshold,
+                        BorderColor = "#dc3545",
+                        StrokeDashArray = 4,
+                        Label = new Label
+                        {
+                            Text = $"的中ライン ({ScoringCalculator.CarryoverThreshold})",
+                            Style = new Style { Color = "#fff", Background = "#dc3545" },
+                        },
+                    },
+                ],
+            };
+        }
+
+        chartOptions = options;
+    }
+
+    private int MatchesFor(ScoreSnapshot snapshot, string predictorId)
+    {
+        var score = snapshot.Predictors.FirstOrDefault(p => p.PredictorId == predictorId);
+        if (score is null)
+        {
+            return 0;
+        }
+
+        return selectedTab switch
+        {
+            "central" => score.CentralMatches,
+            "pacific" => score.PacificMatches,
+            _ => score.TotalMatches,
+        };
+    }
+}

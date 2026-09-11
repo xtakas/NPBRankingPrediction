@@ -1,0 +1,120 @@
+.leaderboard-panel {
+    font-family: 'Zen Maru Gothic', 'Zen Kaku Gothic New', sans-serif;
+    background: #fff8ef;
+    border-radius: 20px;
+    padding: 20px 22px;
+    margin-bottom: 1.5rem;
+}
+
+.leaderboard-title {
+    font-weight: 900;
+    font-size: 1rem;
+    color: #4a3b30;
+    margin-bottom: 14px;
+}
+
+.leaderboard-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.leaderboard-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: #fff;
+    border-radius: 16px;
+    padding: 12px 16px;
+    box-shadow: 0 3px 10px rgba(74, 59, 48, 0.06);
+}
+
+.leaderboard-card--leader {
+    border: 2px solid #ffd166;
+    box-shadow: 0 4px 14px rgba(74, 59, 48, 0.1);
+}
+
+.leaderboard-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: #f3ead9;
+    color: #a3907d;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+}
+
+.leaderboard-avatar--leader {
+    background: #ffd166;
+    color: #4a3b30;
+}
+
+.leaderboard-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.leaderboard-row-top {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 0.8rem;
+    margin-bottom: 6px;
+    gap: 4px 10px;
+}
+
+.leaderboard-name {
+    font-weight: 700;
+    color: #4a3b30;
+}
+
+.leaderboard-count {
+    color: #a3907d;
+    white-space: nowrap;
+}
+
+.leaderboard-count--clear {
+    color: #ff6b4a;
+    font-weight: 700;
+}
+
+.leaderboard-bar-track {
+    height: 10px;
+    border-radius: 999px;
+    background: #f3ead9;
+    position: relative;
+    overflow: hidden;
+}
+
+.leaderboard-bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #ffd166, #ff6b4a);
+}
+
+.leaderboard-bar-tick {
+    position: absolute;
+    left: 50%;
+    top: -3px;
+    width: 2px;
+    height: 16px;
+    background: #4a3b30;
+    opacity: 0.45;
+}
+
+.leaderboard-trophy {
+    color: #ff6b4a;
+    flex-shrink: 0;
+}
+
+.leaderboard-more {
+    margin-top: 10px;
+    font-size: 0.75rem;
+    color: #a3907d;
+    text-align: center;
+}

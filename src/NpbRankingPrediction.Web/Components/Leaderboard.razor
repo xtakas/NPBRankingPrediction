@@ -1,0 +1,98 @@
+@* リーダーボード: 的中数トップNを暖色・カード型で表示(デザイン案③の方向性) *@
+<div class="leaderboard-panel">
+    <div class="leaderboard-title">@Title</div>
+    <div class="leaderboard-cards">
+        @foreach (var row in Rows)
+        {
+            <div class="leaderboard-card @(row.IsLeader && IsSeasonFinal ? "leaderboard-card--leader" : "")">
+                <div class="leaderboard-avatar @(row.IsLeader && IsSeasonFinal ? "leaderboard-avatar--leader" : "")">@row.Score.PredictorId</div>
+                <div class="leaderboard-body">
+                    <div class="leaderboard-row-top">
+                        <span class="leaderboard-name">@NameFor(row.Score.PredictorId)</span>
+                        <span class="leaderboard-count @(row.Score.IsCarryoverClear ? "leaderboard-count--clear" : "")">
+                            @row.Score.TotalMatches / 12@(row.Score.IsCarryoverClear && IsSeasonFinal ? " 的中！" : "")
+                        </span>
+                    </div>
+                    <div class="leaderboard-bar-track">
+                        <div class="leaderboard-bar-fill" style="width:@(BarWidthPercent(row.Score.TotalMatches))%;"></div>
+                        <div class="leaderboard-bar-tick"></div>
+                    </div>
+                </div>
+                @if (row.IsLeader && IsSeasonFinal)
+                {
+                    <svg class="leaderboard-trophy" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                        <path d="M7 4h10v3a5 5 0 0 1-10 0V4z" />
+                        <path d="M7 5H4a2 2 0 0 0 2 4M17 5h3a2 2 0 0 1-2 4" />
+                        <path d="M12 12v4M9 19h6M10 16h4v3h-4z" />
+                    </svg>
+                }
+            </div>
+        }
+    </div>
+    @if (HiddenCount > 0)
+    {
+        <div class="leaderboard-more">他 @HiddenCount 名</div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public List<PredictorScore> Scores { get; set; } = [];
+
+    [Parameter]
+    public Dictionary<string, PredictionEntry> Predictions { get; set; } = [];
+
+    /// <summary>表示する順位の上限。nullなら全員表示。同順位はまとめて表示するため、実際の表示人数はこれを超えることがある。</summary>
+    [Parameter]
+    public int? TopCount { get; set; }
+
+    [Parameter]
+    public string Title { get; set; } = "リーダーボード";
+
+    /// <summary>シーズン確定前は王冠(現在の暫定トップ)と「的中!」表示を早々に確定させないよう隠す。</summary>
+    [Parameter]
+    public bool IsSeasonFinal { get; set; }
+
+    private List<Row> Rows { get; set; } = [];
+
+    private int HiddenCount { get; set; }
+
+    private sealed record Row(PredictorScore Score, bool IsLeader);
+
+    protected override void OnParametersSet()
+    {
+        var ordered = Scores
+            .OrderByDescending(s => s.TotalMatches)
+            .ThenBy(s => s.PredictorId, StringComparer.Ordinal)
+            .ToList();
+
+        var maxScore = ordered.Count > 0 ? ordered[0].TotalMatches : 0;
+
+        // 同点は同順位として扱う(例: 1,1,3位)。TopCountは「人数」ではなく「順位」の上限として使う。
+        var ranked = new List<(PredictorScore Score, int Rank)>();
+        var rank = 0;
+        int? previousMatches = null;
+        for (var i = 0; i < ordered.Count; i++)
+        {
+            if (ordered[i].TotalMatches != previousMatches)
+            {
+                rank = i + 1;
+                previousMatches = ordered[i].TotalMatches;
+            }
+
+            ranked.Add((ordered[i], rank));
+        }
+
+        var cutoffRank = TopCount ?? ranked.Count;
+        var shown = ranked.Where(r => r.Rank <= cutoffRank).ToList();
+
+        // 全員0点(シーズン序盤など)ならまだ誰もリードしていないとみなし、王冠は出さない。
+        Rows = shown.Select(r => new Row(r.Score, maxScore > 0 && r.Score.TotalMatches == maxScore)).ToList();
+        HiddenCount = ranked.Count - shown.Count;
+    }
+
+    private static int BarWidthPercent(int totalMatches) => (int)Math.Round(totalMatches / 12.0 * 100);
+
+    private string NameFor(string predictorId)
+        => Predictions.TryGetValue(predictorId, out var entry) ? entry.Name : "";
+}
