@@ -72,8 +72,8 @@
         }
 
         <Leaderboard Scores="DisplayedPredictorScores" Names="predictorNames" TopCount="appConfig?.LeaderboardTopCount"
-                     IsSeasonFinal="IsSelectedSeasonFinal"
-                     Title="@(IsSelectedSeasonFinal ? "最終リーダーボード(セ・パ合計)" : "リーダーボード(セ・パ合計)")" />
+                     IsSeasonFinal="EffectiveSeasonFinalForDisplay"
+                     Title="@(EffectiveSeasonFinalForDisplay ? "最終リーダーボード(セ・パ合計)" : "リーダーボード(セ・パ合計)")" />
 
         <div class="league-tabs-mobile-only">
             <FluentTabs @bind-ActiveTabId="selectedLeagueTab" Class="mb-3">
@@ -87,14 +87,14 @@
                 <div class="section-title section-title--central mt-0">セ・リーグ</div>
                 <AnswerTable Entries="CentralEntries" />
                 <div class="prediction-table-mobile-only">
-                    <PredictionComparisonTable Entries="CentralEntries" Predictions="predictions.Predictors" Names="predictorNames" Scores="DisplayedPredictorScores" League="League.Central" />
+                    <PredictionComparisonTable Entries="CentralEntries" Predictions="predictions.Predictors" Names="predictorNames" Scores="DisplayedPredictorScores" League="League.Central" IsSeasonFinal="EffectiveSeasonFinalForDisplay" />
                 </div>
             </div>
             <div class="league-section @(selectedLeagueTab == "pacific" ? "active" : "")">
                 <div class="section-title section-title--pacific mt-0">パ・リーグ</div>
                 <AnswerTable Entries="PacificEntries" />
                 <div class="prediction-table-mobile-only">
-                    <PredictionComparisonTable Entries="PacificEntries" Predictions="predictions.Predictors" Names="predictorNames" Scores="DisplayedPredictorScores" League="League.Pacific" />
+                    <PredictionComparisonTable Entries="PacificEntries" Predictions="predictions.Predictors" Names="predictorNames" Scores="DisplayedPredictorScores" League="League.Pacific" IsSeasonFinal="EffectiveSeasonFinalForDisplay" />
                 </div>
             </div>
         </div>
@@ -102,7 +102,7 @@
         @* セ・パの予想表を横に並べると上の順位表の高さの違いで行がズレるため、
            デスクトップでは1つにまとめた表を使う。 *@
         <div class="prediction-table-desktop-only">
-            <CombinedPredictionComparisonTable CentralEntries="CentralEntries" PacificEntries="PacificEntries" Predictions="predictions.Predictors" Names="predictorNames" Scores="DisplayedPredictorScores" />
+            <CombinedPredictionComparisonTable CentralEntries="CentralEntries" PacificEntries="PacificEntries" Predictions="predictions.Predictors" Names="predictorNames" Scores="DisplayedPredictorScores" IsSeasonFinal="EffectiveSeasonFinalForDisplay" />
         </div>
 
         <div class="section-title">的中数の推移</div>
@@ -218,6 +218,12 @@
 
     private bool IsSelectedSeasonFinal => seasons.FirstOrDefault(s => s.Season == selectedSeason)?.IsFinal ?? false;
 
+    /// <summary>
+    /// シーズンが確定していても、日付ピッカーで過去日を見ている間は「その時点ではまだ確定していなかった」ため、
+    /// 王冠・「的中!」・的中セルの金色強制表示はしない。最新表示に戻したときだけ確定扱いにする。
+    /// </summary>
+    private bool EffectiveSeasonFinalForDisplay => IsSelectedSeasonFinal && !IsViewingPastDate;
+
     private DateTimeOffset? LastScrapedAtUtc => seasons.FirstOrDefault(s => s.Season == selectedSeason)?.LastScrapedAtUtc;
 
     private string? LastScrapedAtLocalText
@@ -268,7 +274,9 @@
                 return null;
             }
 
-            return scores.Snapshots.FirstOrDefault(s => s.Date == ViewedStandingsSnapshot.Date) ?? scores.Snapshots[^1];
+            // 該当日のスコアが無い場合、最新スコアに差し替えると「過去の順位表+最新の的中数」という
+            // 不整合な組み合わせが無警告で表示されてしまうため、nullのまま返す(呼び出し側は ?? [] で空表示にする)。
+            return scores.Snapshots.FirstOrDefault(s => s.Date == ViewedStandingsSnapshot.Date);
         }
     }
 

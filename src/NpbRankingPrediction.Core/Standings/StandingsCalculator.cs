@@ -77,10 +77,20 @@ public static class StandingsCalculator
                 // ゲーム差 = ((首位の勝数 - 自チームの勝数) + (自チームの敗数 - 首位の敗数)) / 2
                 var gamesBehind = ((leader.Wins - x.Wins) + (x.Losses - leader.Losses)) / 2.0;
 
-                // 直上・直下の相手との2者間だけを見た簡易判定(3チーム以上が絡む一斉逆転までは考慮しない)。
-                var isRankConfirmed =
-                    (index == 0 || IsBoundaryConfirmed(ordered[index - 1], x)) &&
-                    (index == ordered.Count - 1 || IsBoundaryConfirmed(x, ordered[index + 1]));
+                // 自分より上の全チーム・下の全チームそれぞれとの2者間比較で判定する
+                // (隣接チームだけでなく、2つ以上離れたチームが割り込んで逆転する可能性も排除する)。
+                var isRankConfirmed = true;
+                for (var j = 0; j < ordered.Count && isRankConfirmed; j++)
+                {
+                    if (j == index)
+                    {
+                        continue;
+                    }
+
+                    isRankConfirmed = j < index
+                        ? IsBoundaryConfirmed(ordered[j], x)
+                        : IsBoundaryConfirmed(x, ordered[j]);
+                }
 
                 return new StandingsEntry(x.Team.Code, index + 1, x.Wins, x.Losses, x.Draws, x.WinPercentage, gamesBehind, isRankConfirmed);
             })
@@ -108,6 +118,14 @@ public static class StandingsCalculator
         var lowerBestLosses = lower.Losses;
         var lowerBestDecided = lowerBestWins + lowerBestLosses;
         var lowerBestPct = lowerBestDecided == 0 ? 0.0 : (double)lowerBestWins / lowerBestDecided;
+
+        // 両チームとも残り試合が無ければ、この時点の勝率がそのまま最終成績(同率はRank()側のタイブレークで
+        // 既に決着済み)なので、勝率が同じでも確定とみなしてよい。一方でも残り試合があるうちは、
+        // 逆転の可能性を残すため厳密な不等号のままにする。
+        if (higher.Remaining == 0 && lower.Remaining == 0)
+        {
+            return higherWorstPct >= lowerBestPct;
+        }
 
         return higherWorstPct > lowerBestPct;
     }

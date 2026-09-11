@@ -7,7 +7,7 @@ publish_output/
 src/NpbRankingPrediction.Web/wwwroot/data/
 
 ## Predictor real names: local-only, never committed so GitHub/GitHub Pages only ever show badge numbers
-data/*/predictor-names.json
+data/**/predictor-names.json
 
 ## IDE / tooling
 .vs/

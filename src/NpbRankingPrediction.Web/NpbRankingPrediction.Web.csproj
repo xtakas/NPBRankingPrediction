@@ -19,12 +19,34 @@
   </ItemGroup>
 
   <!-- リポジトリ直下のdata/(スクレイパーが更新するJSON)をwwwroot/dataに同期し、
-       ローカル実行・ビルド・発行のいずれでも常に最新データをフロントエンドから参照できるようにする -->
+       ローカル実行・ビルド・発行のいずれでも常に最新データをフロントエンドから参照できるようにする。
+       predictor-names.json(実名・ローカル専用)はここでは絶対にコピーしない
+       (dotnet publishの出力にも含まれてしまい、実名が公開バンドルに混入するため)。 -->
   <Target Name="CopySeasonData" BeforeTargets="BeforeBuild;Publish">
     <ItemGroup>
-      <SeasonDataFiles Include="$(MSBuildProjectDirectory)\..\..\data\**\*.json" />
+      <SeasonDataFiles Include="$(MSBuildProjectDirectory)\..\..\data\**\*.json"
+                        Exclude="$(MSBuildProjectDirectory)\..\..\data\**\predictor-names.json" />
     </ItemGroup>
     <Copy SourceFiles="@(SeasonDataFiles)" DestinationFolder="$(MSBuildProjectDirectory)\wwwroot\data\%(RecursiveDir)" SkipUnchangedFiles="true" />
+  </Target>
+
+  <!-- predictor-names.jsonはローカル確認(dotnet run/build)の便宜のためだけにwwwroot/dataへコピーする。
+       dotnet publishもBeforeBuildを経由するためこの時点ではまだ発行物に含まれてしまう可能性があるが、
+       下のRemovePredictorNamesFromPublishOutputで発行物からは必ず取り除く(二重の安全策)。 -->
+  <Target Name="CopyPredictorNamesForLocalDevOnly" BeforeTargets="BeforeBuild">
+    <ItemGroup>
+      <PredictorNameFiles Include="$(MSBuildProjectDirectory)\..\..\data\**\predictor-names.json" />
+    </ItemGroup>
+    <Copy SourceFiles="@(PredictorNameFiles)" DestinationFolder="$(MSBuildProjectDirectory)\wwwroot\data\%(RecursiveDir)" SkipUnchangedFiles="true" Condition="'@(PredictorNameFiles)' != ''" />
+  </Target>
+
+  <!-- 実名は発行物(GitHub Pagesにデプロイされる中身)に絶対含めない。上のコピーが発行物に紛れ込む
+       経路を塞いだ上で、圧縮版(.br/.gz)も含めて発行完了後の出力ディレクトリから確実に削除する。 -->
+  <Target Name="RemovePredictorNamesFromPublishOutput" AfterTargets="Publish">
+    <ItemGroup>
+      <LeakedPredictorNameFiles Include="$(PublishDir)**\predictor-names.json*" Condition="'$(PublishDir)' != ''" />
+    </ItemGroup>
+    <Delete Files="@(LeakedPredictorNameFiles)" Condition="'@(LeakedPredictorNameFiles)' != ''" />
   </Target>
 
 </Project>

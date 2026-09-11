@@ -37,7 +37,7 @@
                     {
                         var predictedTeam = PredictedTeamAt(id, League.Central, rank);
                         var isHit = predictedTeam is not null && predictedTeam == ActualTeamAt(League.Central, rank);
-                        var isConfirmedHit = isHit && IsRankConfirmedAt(League.Central, rank);
+                        var isConfirmedHit = isHit && (IsSeasonFinal || IsRankConfirmedAt(League.Central, rank));
                         <td class="text-center league-col-central @(isConfirmedHit ? "cell-hit-confirmed" : isHit ? "cell-hit" : "")">
                             @if (predictedTeam is not null)
                             {
@@ -53,7 +53,7 @@
                     {
                         var predictedTeam = PredictedTeamAt(id, League.Pacific, rank);
                         var isHit = predictedTeam is not null && predictedTeam == ActualTeamAt(League.Pacific, rank);
-                        var isConfirmedHit = isHit && IsRankConfirmedAt(League.Pacific, rank);
+                        var isConfirmedHit = isHit && (IsSeasonFinal || IsRankConfirmedAt(League.Pacific, rank));
                         <td class="text-center league-col-pacific @(isConfirmedHit ? "cell-hit-confirmed" : isHit ? "cell-hit" : "")">
                             @if (predictedTeam is not null)
                             {
@@ -91,6 +91,11 @@
 
     [Parameter, EditorRequired]
     public List<PredictorScore> Scores { get; set; } = [];
+
+    /// <summary>trueなら残り試合の有無に関わらず、的中している行はすべて確定表示にする。
+    /// (シーズン確定後は近似判定に頼らず全順位が確定しているとみなせるため。)</summary>
+    [Parameter]
+    public bool IsSeasonFinal { get; set; }
 
     private List<string> PredictorIds => Predictions.Keys.ToList();
 

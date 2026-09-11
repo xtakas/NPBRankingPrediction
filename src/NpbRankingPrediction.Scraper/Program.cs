@@ -1,5 +1,6 @@
 using NpbRankingPrediction.Core.DataAccess;
 using NpbRankingPrediction.Core.DataFiles;
+using NpbRankingPrediction.Core.Models;
 using NpbRankingPrediction.Core.Scoring;
 using NpbRankingPrediction.Core.Standings;
 using NpbRankingPrediction.Scraper;
@@ -31,7 +32,20 @@ var mergedById = existing.Games
 foreach (var month in options.Months)
 {
     Console.WriteLine($"Fetching schedule_{month:D2}_detail.html ...");
-    var monthGames = await scraper.FetchMonthAsync(options.Season, month);
+
+    List<GameResult> monthGames;
+    try
+    {
+        monthGames = await scraper.FetchMonthAsync(options.Season, month);
+    }
+    catch (HttpRequestException ex)
+    {
+        // オフシーズンの月(まだページが存在しない等)や一時的な通信障害でも、他の月の取得や
+        // lastScrapedAtUtcの更新まで止めたくないため、この月だけスキップして継続する。
+        Console.WriteLine($"  -> 取得に失敗したためこの月をスキップします: {ex.Message}");
+        continue;
+    }
+
     foreach (var game in monthGames.Where(g => g.GameId is not null))
     {
         mergedById[game.GameId!] = game;
@@ -116,7 +130,14 @@ internal sealed record CliOptions(int Season, IReadOnlyList<int> Months, bool Ba
         List<int> months;
         if (fromMonth.HasValue || toMonth.HasValue)
         {
-            months = Enumerable.Range(fromMonth ?? 3, (toMonth ?? currentMonth) - (fromMonth ?? 3) + 1).ToList();
+            var effectiveFrom = fromMonth ?? 3;
+            var effectiveTo = toMonth ?? currentMonth;
+            if (effectiveTo < effectiveFrom)
+            {
+                throw new ArgumentException($"--to-month ({effectiveTo}) must not be less than --from-month ({effectiveFrom}).");
+            }
+
+            months = Enumerable.Range(effectiveFrom, effectiveTo - effectiveFrom + 1).ToList();
         }
         else if (backfill)
         {
@@ -125,7 +146,10 @@ internal sealed record CliOptions(int Season, IReadOnlyList<int> Months, bool Ba
         }
         else
         {
-            months = [currentMonth];
+            // 月初にcronが走った直後は前月末の試合がまだ未取得のことがあるため、前月分も併せて取得する。
+            // 既存games.jsonとはgameIdでマージされるので、重複取得しても安全(冪等)。
+            var startMonth = Math.Max(3, currentMonth - 1);
+            months = Enumerable.Range(startMonth, currentMonth - startMonth + 1).ToList();
         }
 
         return new CliOptions(season, months, backfill, finalize, dataDirectory);

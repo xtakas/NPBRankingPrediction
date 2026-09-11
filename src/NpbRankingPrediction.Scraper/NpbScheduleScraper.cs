@@ -29,13 +29,22 @@ public sealed class NpbScheduleScraper(HttpClient httpClient)
         }
 
         DateOnly? currentDate = null;
+        var syntheticIdSequenceByMatchup = new Dictionary<string, int>();
 
         foreach (var row in rows)
         {
             var dateHeader = row.SelectSingleNode("./th");
             if (dateHeader is not null)
             {
-                currentDate = ParseDate(dateHeader.InnerText, season);
+                // 表記ゆれ等でパースに失敗した行は日付を更新せず(直前の日付を維持したまま)この行だけ
+                // スキップする。これにより月内の1行の異常で全体の取得が落ちることを防ぐ。
+                var parsedDate = TryParseDate(dateHeader.InnerText, season);
+                if (parsedDate is null)
+                {
+                    continue;
+                }
+
+                currentDate = parsedDate;
             }
 
             if (currentDate is null)
@@ -75,6 +84,17 @@ public sealed class NpbScheduleScraper(HttpClient httpClient)
                 ?.GetAttributeValue("href", null)
                 ?.Trim('/');
 
+            if (gameId is null)
+            {
+                // /scores/ リンクが無い試合はgameIdがnullのままだと、Program.cs側のマージ処理
+                // (GameId is not null でフィルタ)により永久に無視されてしまう。日付+対戦カード+
+                // その日の何試合目かから決定的な合成IDを組み立て、ダブルヘッダーにも対応する。
+                var matchupKey = $"{currentDate.Value:yyyyMMdd}-{homeTeam.Code}-{awayTeam.Code}";
+                syntheticIdSequenceByMatchup.TryGetValue(matchupKey, out var sequence);
+                syntheticIdSequenceByMatchup[matchupKey] = sequence + 1;
+                gameId = $"synthetic-{matchupKey}-{sequence}";
+            }
+
             games.Add(new GameResult(currentDate.Value, homeTeam.Code, awayTeam.Code, score1, score2, gameId));
         }
 
@@ -82,12 +102,19 @@ public sealed class NpbScheduleScraper(HttpClient httpClient)
     }
 
     // headerTextは "9/1（火）" のような形式
-    private static DateOnly ParseDate(string headerText, int season)
+    private static DateOnly? TryParseDate(string headerText, int season)
     {
-        var datePart = headerText.Split('（', '(')[0].Trim();
-        var parts = datePart.Split('/');
-        var month = int.Parse(parts[0]);
-        var day = int.Parse(parts[1]);
-        return new DateOnly(season, month, day);
+        try
+        {
+            var datePart = headerText.Split('（', '(')[0].Trim();
+            var parts = datePart.Split('/');
+            var month = int.Parse(parts[0]);
+            var day = int.Parse(parts[1]);
+            return new DateOnly(season, month, day);
+        }
+        catch (Exception ex) when (ex is FormatException or IndexOutOfRangeException or OverflowException)
+        {
+            return null;
+        }
     }
 }

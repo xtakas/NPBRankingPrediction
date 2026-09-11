@@ -11,15 +11,40 @@ public sealed class SeasonDataService(HttpClient httpClient)
 {
     public async Task<List<SeasonInfo>> LoadSeasonsAsync(CancellationToken ct = default)
     {
-        var file = await httpClient.GetFromJsonAsync<SeasonsFile>("data/seasons.json", ct);
-        return file?.Seasons ?? [];
+        try
+        {
+            var file = await httpClient.GetFromJsonAsync<SeasonsFile>("data/seasons.json", ct);
+            return file?.Seasons ?? [];
+        }
+        catch (Exception ex) when (ex is HttpRequestException or System.Text.Json.JsonException)
+        {
+            return [];
+        }
     }
 
-    public Task<StandingsFile?> LoadStandingsAsync(int season, CancellationToken ct = default)
-        => httpClient.GetFromJsonAsync<StandingsFile>($"data/{season}/standings.json", ct);
+    public async Task<StandingsFile?> LoadStandingsAsync(int season, CancellationToken ct = default)
+    {
+        try
+        {
+            return await httpClient.GetFromJsonAsync<StandingsFile>($"data/{season}/standings.json", ct);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or System.Text.Json.JsonException)
+        {
+            return null;
+        }
+    }
 
-    public Task<PredictionsFile?> LoadPredictionsAsync(int season, CancellationToken ct = default)
-        => httpClient.GetFromJsonAsync<PredictionsFile>($"data/{season}/predictions.json", ct);
+    public async Task<PredictionsFile?> LoadPredictionsAsync(int season, CancellationToken ct = default)
+    {
+        try
+        {
+            return await httpClient.GetFromJsonAsync<PredictionsFile>($"data/{season}/predictions.json", ct);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or System.Text.Json.JsonException)
+        {
+            return null;
+        }
+    }
 
     /// <summary>
     /// predictor-names.json はGitHubにコミットしないローカル専用ファイルなので、
@@ -38,8 +63,17 @@ public sealed class SeasonDataService(HttpClient httpClient)
         }
     }
 
-    public Task<ScoresFile?> LoadScoresAsync(int season, CancellationToken ct = default)
-        => httpClient.GetFromJsonAsync<ScoresFile>($"data/{season}/scores.json", ct);
+    public async Task<ScoresFile?> LoadScoresAsync(int season, CancellationToken ct = default)
+    {
+        try
+        {
+            return await httpClient.GetFromJsonAsync<ScoresFile>($"data/{season}/scores.json", ct);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or System.Text.Json.JsonException)
+        {
+            return null;
+        }
+    }
 
     /// <summary>
     /// data/config.json はサイト全体の任意設定なので、未配置(404)やパース失敗時は

@@ -19,7 +19,7 @@
                     <td class="text-center">@entry.Wins</td>
                     <td class="text-center">@entry.Losses</td>
                     <td class="text-center">@entry.Draws</td>
-                    <td class="text-center">@FormatGamesBehind(entry.GamesBehind)</td>
+                    <td class="text-center">@FormatGamesBehind(entry)</td>
                 </tr>
             }
         </tbody>
@@ -30,6 +30,7 @@
     [Parameter, EditorRequired]
     public List<StandingsEntry> Entries { get; set; } = [];
 
-    private static string FormatGamesBehind(double gamesBehind)
-        => gamesBehind == 0 ? "-" : gamesBehind.ToString("0.0");
+    // ゲーム差0は首位(Rank==1)のみ「-」。首位と同率のチームは0.0として表示する。
+    private static string FormatGamesBehind(StandingsEntry entry)
+        => entry.Rank == 1 ? "-" : entry.GamesBehind.ToString("0.0");
 }
