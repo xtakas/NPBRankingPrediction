@@ -8,8 +8,14 @@
 # として単体実行ファイルを作り、このマシンの $SCRAPER_BIN (既定: ~/npb-scraper-bin/NpbRankingPrediction.Scraper)
 # にコピー・chmod +x したものを実行する。Scraperのコードを変更したら、その都度この再publish・再配置が必要。
 #
-# crontab例(毎日深夜1時に実行):
-#   0 1 * * * /path/to/NPBRankingPrediction/scripts/run-scraper.sh >> /var/log/npb-scraper.log 2>&1
+# 当日の試合速報(npb.jpの本日の試合速報ウィジェット)は21〜24時台に複数回実行して取りに行く
+# 想定。その日の全試合が既に「試合終了」と確認済みの場合、このスクリプトはnpb.jpへ一切
+# アクセスせずに即終了する(Scraper側のLastFullyFinishedDateによる判定)ので、頻繁に実行しても
+# 無駄なアクセスにはならない。
+#
+# crontab例(21〜23時台は30分おき、24時・深夜1時にも念のため実行):
+#   0,30 21-23 * * * /path/to/NPBRankingPrediction/scripts/run-scraper.sh >> /var/log/npb-scraper.log 2>&1
+#   0 0,1 * * *       /path/to/NPBRankingPrediction/scripts/run-scraper.sh >> /var/log/npb-scraper.log 2>&1
 
 set -euo pipefail
 

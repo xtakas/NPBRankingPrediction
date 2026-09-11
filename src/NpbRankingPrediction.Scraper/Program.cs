@@ -24,6 +24,22 @@ if (existingSeasonInfo is { IsFinal: true } && !options.Finalize)
     return;
 }
 
+var todayJst = NpbScheduleScraper.TodayJst;
+if (options.IsDefaultRun && existingSeasonInfo?.LastFullyFinishedDate == todayJst)
+{
+    // 21〜24時台に複数回cronを回す運用を想定し、当日分がすでに「全試合終了」と確認済みなら
+    // npb.jpへは一切アクセスしない(--backfill/--from-month等の明示的な実行では常に取得する)。
+    Console.WriteLine($"{todayJst}分は既に全試合終了として記録済みのため、npb.jpへのアクセスをスキップします。");
+    var skippedSeasonInfo = existingSeasonInfo with { LastScrapedAtUtc = DateTimeOffset.UtcNow };
+    var skippedSeasons = seasonsBefore.Seasons
+        .Where(s => s.Season != options.Season)
+        .Append(skippedSeasonInfo)
+        .OrderByDescending(s => s.Season)
+        .ToList();
+    await dataStore.SaveSeasonsAsync(new SeasonsFile(skippedSeasons));
+    return;
+}
+
 var existing = await dataStore.LoadGamesAsync(options.Season);
 var mergedById = existing.Games
     .Where(g => g.GameId is not null)
@@ -54,6 +70,33 @@ foreach (var month in options.Months)
     Console.WriteLine($"  -> {monthGames.Count} completed games found");
 }
 
+// 月別ページ(schedule_MM_detail.html)は当日分の反映に数時間〜翌日までタイムラグがあるため、
+// npb.jpの「本日の試合速報」ウィジェットから当日分を追加で取りにいく。その日の全試合が
+// 「試合終了」(または中止)になっているときだけ反映し、試合途中の暫定結果は順位表に混ぜない。
+Console.WriteLine("Fetching today's live scoreboard ...");
+LiveScoreboardResult? live = null;
+try
+{
+    live = await scraper.FetchTodayLiveGamesAsync();
+    if (live.AllGamesFinished)
+    {
+        foreach (var game in live.Games.Where(g => g.GameId is not null))
+        {
+            mergedById[game.GameId!] = game;
+        }
+
+        Console.WriteLine($"  -> {live.Games.Count} game(s) finished today ({live.Date}), merged");
+    }
+    else
+    {
+        Console.WriteLine($"  -> today's games ({live.Date}) are not all finished yet, skipping for now");
+    }
+}
+catch (HttpRequestException ex)
+{
+    Console.WriteLine($"  -> failed to fetch live scoreboard, skipping: {ex.Message}");
+}
+
 var gamesFile = new GamesFile(
     options.Season,
     mergedById.Values.OrderBy(g => g.Date).ThenBy(g => g.GameId, StringComparer.Ordinal).ToList());
@@ -79,7 +122,10 @@ else
 }
 
 var isFinal = options.Finalize || (existingSeasonInfo?.IsFinal ?? false);
-var updatedSeasonInfo = new SeasonInfo(options.Season, isFinal, DateTimeOffset.UtcNow);
+var lastFullyFinishedDate = live?.AllGamesFinished == true
+    ? live.Date
+    : existingSeasonInfo?.LastFullyFinishedDate;
+var updatedSeasonInfo = new SeasonInfo(options.Season, isFinal, DateTimeOffset.UtcNow, lastFullyFinishedDate);
 var updatedSeasons = seasonsBefore.Seasons
     .Where(s => s.Season != options.Season)
     .Append(updatedSeasonInfo)
@@ -88,7 +134,7 @@ var updatedSeasons = seasonsBefore.Seasons
 await dataStore.SaveSeasonsAsync(new SeasonsFile(updatedSeasons));
 Console.WriteLine($"seasons.json updated: {string.Join(',', updatedSeasons.Select(s => $"{s.Season}({(s.IsFinal ? "確定" : "進行中")})"))}");
 
-internal sealed record CliOptions(int Season, IReadOnlyList<int> Months, bool Backfill, bool Finalize, string DataDirectory)
+internal sealed record CliOptions(int Season, IReadOnlyList<int> Months, bool Backfill, bool Finalize, string DataDirectory, bool IsDefaultRun)
 {
     public static CliOptions Parse(string[] args)
     {
@@ -127,6 +173,7 @@ internal sealed record CliOptions(int Season, IReadOnlyList<int> Months, bool Ba
         }
 
         var currentMonth = DateTime.Now.Month;
+        var isDefaultRun = !backfill && !fromMonth.HasValue && !toMonth.HasValue;
         List<int> months;
         if (fromMonth.HasValue || toMonth.HasValue)
         {
@@ -152,6 +199,6 @@ internal sealed record CliOptions(int Season, IReadOnlyList<int> Months, bool Ba
             months = Enumerable.Range(startMonth, currentMonth - startMonth + 1).ToList();
         }
 
-        return new CliOptions(season, months, backfill, finalize, dataDirectory);
+        return new CliOptions(season, months, backfill, finalize, dataDirectory, isDefaultRun);
     }
 }

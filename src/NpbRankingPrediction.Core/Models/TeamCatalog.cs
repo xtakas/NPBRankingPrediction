@@ -29,5 +29,7 @@ public static class TeamCatalog
 
     public static Team? FindByCode(string code) => All.FirstOrDefault(t => t.Code == code);
 
+    public static Team? FindByFullName(string fullName) => All.FirstOrDefault(t => t.FullName == fullName);
+
     public static IReadOnlyList<Team> TeamsIn(League league) => league == League.Central ? CentralTeams : PacificTeams;
 }

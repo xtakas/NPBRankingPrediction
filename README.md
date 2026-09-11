@@ -25,6 +25,7 @@
 ```
 
 - ②は「その日の試合結果が確定した分だけ」`games.json` に追記するので、1日1回の実行で日々の順位が自動的に積み上がっていきます。同じ試合を再取得しても `gameId` で上書きされるだけなので、日に何度実行しても壊れません(冪等)。
+- npb.jpの月別ページ(schedule_MM_detail.html)は当日分の反映に数時間〜翌日までのタイムラグがあるため、②は**npb.jpの「本日の試合速報」ウィジェットから当日分も追加で取得**します。その日の全試合が「試合終了」(または中止)になっている場合のみ反映し、1試合でも進行中・未開始があればその日はまだ何も反映しません(試合途中の暫定結果が順位表に混ざるのを防ぐため)。
 - Web画面には `最終更新日`(=順位データが反映されている試合日)と `データ取得`(=②が最後に成功した日時)を分けて表示します。試合のない日を除いて**36時間以上「データ取得」が更新されない場合は画面上に警告バナーが出ます**(①〜③のどこかが止まっている合図です)。
 - ①〜③は自宅Linuxマシン、④〜⑤はGitHub側で完結するので、自宅マシンの電源が入っている間だけ気にすればよい構成です。
 
@@ -173,12 +174,15 @@ dotnet publish src/NpbRankingPrediction.Scraper -c Release -r linux-x64 --self-c
 - CPUアーキテクチャが x86_64 でない場合(Raspberry Piなどの ARM機)は `-r linux-arm64` を指定してください。
 
 ```
-0 1 * * * /path/to/NPBRankingPrediction/scripts/run-scraper.sh >> /var/log/npb-scraper.log 2>&1
+0,30 21-23 * * * /path/to/NPBRankingPrediction/scripts/run-scraper.sh >> /var/log/npb-scraper.log 2>&1
+0 0,1 * * *       /path/to/NPBRankingPrediction/scripts/run-scraper.sh >> /var/log/npb-scraper.log 2>&1
 ```
 
-このスクリプトは当月分の試合結果を再取得し、`data/` に変更があれば自動で commit・push します。push をトリガーに GitHub Actions がフロントエンドを再ビルドし、GitHub Pages に反映します(全体の流れは前掲の図を参照)。
+npb.jpの月別ページ(schedule_MM_detail.html)は当日分の反映に数時間〜翌日までタイムラグがあるため、Scraperはそれとは別に npb.jp の「本日の試合速報」ウィジェットも見に行き、**その日の全試合が「試合終了」(または中止)になっている場合だけ**当日分を反映します。1試合でも進行中・未開始があれば、その日は何も反映せず次回の実行を待ちます(試合途中の暫定結果が順位表に混ざるのを防ぐため)。このため、上のように21〜24時台に複数回実行しても安全です。
 
-- 実行が成功するたびに、試合結果に変更がなくても `data/seasons.json` の `lastScrapedAtUtc` が更新されます。Web画面上部の「データ取得: ◯月◯日 ◯◯:◯◯」はこの値で、cronが実際に動いているかどうかの確認に使えます。
+- **一度「その日は全試合終了」と確認できたら、それ以降その日のうちに何回cronが実行されても npb.jp へは一切アクセスしません**(`data/seasons.json` の `lastFullyFinishedDate` で判定)。無駄なアクセスを増やさずに頻繁実行できます。`--backfill`/`--from-month`/`--to-month` を明示的に付けて手動実行した場合は、この判定を無視して必ず取得します。
+- このスクリプトは当月分(と前月分)の試合結果・当日の速報を取得し、`data/` に変更があれば自動で commit・push します。push をトリガーに GitHub Actions がフロントエンドを再ビルドし、GitHub Pages に反映します(全体の流れは前掲の図を参照)。
+- 実行が成功するたびに(npb.jpへのアクセスをスキップした場合も含めて)、`data/seasons.json` の `lastScrapedAtUtc` が更新されます。Web画面上部の「データ取得: ◯月◯日 ◯◯:◯◯」はこの値で、cronが実際に動いているかどうかの確認に使えます。
 - 36時間以上 `lastScrapedAtUtc` が更新されないと、Web画面に自動更新が止まっている可能性がある旨の警告バナーが表示されます。cronの設定・自宅マシンの起動状態・ネットワークなどを確認してください。
 - 初回セットアップ時の動作確認は `scripts/run-scraper.sh` を手動で1回実行し、`data/seasons.json` に `lastScrapedAtUtc` が書き込まれること・コンソールに `-> N completed games found` と出ることを確認すると安心です。
 
