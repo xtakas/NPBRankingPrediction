@@ -161,6 +161,17 @@ dotnet run --project src/NpbRankingPrediction.Web
 
 手順4でリモートリポジトリが用意できたら、そのクローンを自宅Linuxマシンに置き、`scripts/run-scraper.sh` を cron に登録します(スクリプトが `git pull`/`git push` するため、事前に push できる状態のクローンであることが前提です)。
 
+自宅Linuxマシンに .NET SDK をインストールしたくない(または入れられない)場合は、Windows側で Linux 向けに単体実行ファイルとして publish したものをコピーして使えます。
+
+```powershell
+dotnet publish src/NpbRankingPrediction.Scraper -c Release -r linux-x64 --self-contained true -o publish_linux_scraper
+```
+
+生成された `publish_linux_scraper/` の中身を自宅Linuxマシンの `~/npb-scraper-bin/`(既定のパス。変えたい場合は `run-scraper.sh` 実行時に環境変数 `SCRAPER_BIN` でフルパスを指定)にコピーし、`chmod +x ~/npb-scraper-bin/NpbRankingPrediction.Scraper` します。これで自宅マシン側には .NET を何もインストールせずに実行できます。
+
+- **Scraperのコードを変更したら、その都度Windowsで再publish→コピーし直す必要があります**(自動更新はされません)。当面Scraper自体の変更頻度は低い想定なので、まずはこの手動運用で開始し、頻繁に変更するようになったら別の運用(CIでのビルド配布など)を検討してください。
+- CPUアーキテクチャが x86_64 でない場合(Raspberry Piなどの ARM機)は `-r linux-arm64` を指定してください。
+
 ```
 0 1 * * * /path/to/NPBRankingPrediction/scripts/run-scraper.sh >> /var/log/npb-scraper.log 2>&1
 ```
@@ -169,7 +180,7 @@ dotnet run --project src/NpbRankingPrediction.Web
 
 - 実行が成功するたびに、試合結果に変更がなくても `data/seasons.json` の `lastScrapedAtUtc` が更新されます。Web画面上部の「データ取得: ◯月◯日 ◯◯:◯◯」はこの値で、cronが実際に動いているかどうかの確認に使えます。
 - 36時間以上 `lastScrapedAtUtc` が更新されないと、Web画面に自動更新が止まっている可能性がある旨の警告バナーが表示されます。cronの設定・自宅マシンの起動状態・ネットワークなどを確認してください。
-- 初回セットアップ時の動作確認は `--season 2026 --data-dir data` を手動で1回実行し、`data/seasons.json` に `lastScrapedAtUtc` が書き込まれること・コンソールに `-> N completed games found` と出ることを確認すると安心です。
+- 初回セットアップ時の動作確認は `scripts/run-scraper.sh` を手動で1回実行し、`data/seasons.json` に `lastScrapedAtUtc` が書き込まれること・コンソールに `-> N completed games found` と出ることを確認すると安心です。
 
 ### 6. シーズン終了後に「確定」にする
 

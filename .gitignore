@@ -2,6 +2,7 @@
 bin/
 obj/
 publish_output/
+publish_linux_scraper/
 
 ## Blazor: data/ is copied into wwwroot/data at build time; the canonical copy lives at repo root /data
 src/NpbRankingPrediction.Web/wwwroot/data/
