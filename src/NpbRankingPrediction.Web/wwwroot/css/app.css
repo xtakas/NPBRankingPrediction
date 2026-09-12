@@ -30,6 +30,20 @@ body[data-theme="dark"] {
     --hit-confirmed-border: #e0b23c;
 }
 
+/* Fluentの既定フォントスタック(--fontFamilyBase)は "Segoe UI" 等の欧文フォントのみで日本語を
+   一切含まないため、日本語文字の描画をまるごとOS標準のフォールバック機構に委ねてしまっている。
+   端末・ブラウザによってフォールバック先のフォントが異なり、濁点付き文字の字形が欠けるなど
+   表示が不安定になる実例があったため、確実な日本語Webフォントを明示的に指定して固定する。
+   default-fuib.cssのbody{font-family:var(--fontFamilyBase)}は実行時に動的注入され特異度も
+   同じため、html body と要素を1つ足して確実に上書きする。 */
+/* FluentのWeb Components(fluent-tab等)は各要素が自前でfont-family:var(--fontFamilyBase)を
+   持っており、bodyへの指定を継承させるだけでは上書きできない。全称セレクタ+!importantで
+   確実に効かせる(下の.leaderboard-panelのような意図的な独自フォント指定は、そちら側にも
+   !importantを付けて優先させている)。 */
+* {
+    font-family: "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+}
+
 h1:focus {
     outline: none;
 }

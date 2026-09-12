@@ -19,7 +19,9 @@
     --lb-bar-tick-bg: #4a3b30;
     --lb-trophy-color: #ff6b4a;
 
-    font-family: 'Zen Maru Gothic', 'Zen Kaku Gothic New', sans-serif;
+    /* app.cssの全称セレクタ(日本語Webフォント指定, !important)に上書きされないよう、
+       このコンポーネント独自の見た目を守るためこちらにも!importantを付ける。 */
+    font-family: 'Zen Maru Gothic', 'Zen Kaku Gothic New', 'Noto Sans JP', sans-serif !important;
     background: var(--lb-panel-bg);
     border-radius: 20px;
     padding: 20px 22px;
