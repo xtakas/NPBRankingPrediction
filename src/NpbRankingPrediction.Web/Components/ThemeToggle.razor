@@ -7,7 +7,7 @@
     {
         <button type="button"
                 class="theme-toggle-button @(selectedMode == option.Mode ? "active" : "")"
-                aria-pressed="@(selectedMode == option.Mode)"
+                aria-pressed="@(selectedMode == option.Mode ? "true" : "false")"
                 @onclick="@(() => SelectAsync(option.Mode))">
             @option.Label
         </button>
