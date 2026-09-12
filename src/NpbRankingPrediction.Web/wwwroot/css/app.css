@@ -6,6 +6,28 @@
     --league-central-bg: #e5f5ea;
     --league-pacific: #2596c9;
     --league-pacific-bg: #e3f3fa;
+
+    /* 的中セルのハイライト色。順位が変わり得る間は緑、もう変わり得ないと確定したら金色
+       (Dashboard.razor の IsRankConfirmed 判定と連動、詳細はREADME「順位確定判定」参照)。 */
+    --hit-bg: #bfe8cc;
+    --hit-border: #2f9e57;
+    --hit-confirmed-bg: #ffe1a8;
+    --hit-confirmed-border: #d98c1f;
+}
+
+/* IThemeService(FluentUI)がダーク解決時に <body data-theme="dark"> を付与する。
+   Fluentの --colorNeutral* トークン類はライブラリ側が自動でダーク値に切り替えるが、
+   上記のリーグ色・的中色はこのアプリ独自の色なので、ここで明示的にダーク値を用意する。 */
+body[data-theme="dark"] {
+    --league-central: #4fd07f;
+    --league-central-bg: #163a24;
+    --league-pacific: #6cc6ef;
+    --league-pacific-bg: #123244;
+
+    --hit-bg: #1d4a2c;
+    --hit-border: #4cbb75;
+    --hit-confirmed-bg: #4a3c14;
+    --hit-confirmed-border: #e0b23c;
 }
 
 h1:focus {
@@ -113,7 +135,7 @@ code {
 }
 
 .muted-text {
-    color: var(--neutral-foreground-3, #6b7280);
+    color: var(--colorNeutralForeground3);
     font-size: 0.875rem;
 }
 
@@ -121,6 +143,30 @@ code {
     font-size: 1.05rem;
     font-weight: 700;
     margin: 1.5rem 0 0.75rem;
+}
+
+.theme-toggle {
+    display: inline-flex;
+    border: 1px solid var(--colorNeutralStroke1);
+    border-radius: 999px;
+    padding: 2px;
+    gap: 2px;
+}
+
+.theme-toggle-button {
+    font: inherit;
+    font-size: 0.78rem;
+    padding: 0.25rem 0.65rem;
+    border: none;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--colorNeutralForeground2);
+    cursor: pointer;
+}
+
+.theme-toggle-button.active {
+    background: var(--colorBrandBackground, #1a8a44);
+    color: var(--colorNeutralForegroundOnBrand, #fff);
 }
 
 .date-view-picker {
@@ -134,9 +180,10 @@ code {
 .date-view-picker-input {
     font: inherit;
     padding: 0.3rem 0.5rem;
-    border: 1px solid var(--neutral-stroke-divider-rest, #d1d1d1);
+    border: 1px solid var(--colorNeutralStroke1);
     border-radius: 4px;
-    background: #fff;
+    background: var(--colorNeutralBackground1);
+    color: var(--colorNeutralForeground1);
 }
 
 .table-scroll {
@@ -174,20 +221,20 @@ code {
 .fluent-table th,
 .fluent-table td {
     padding: 0.55rem 0.6rem;
-    border-bottom: 1px solid var(--neutral-stroke-divider-rest, #e1e1e1);
+    border-bottom: 1px solid var(--colorNeutralStroke2);
 }
 
 .fluent-table thead th {
-    background: var(--neutral-fill-secondary-rest, #f5f5f5);
+    background: var(--colorNeutralBackground2);
     font-weight: 600;
     font-size: 0.8rem;
-    color: var(--neutral-foreground-3, #555555);
+    color: var(--colorNeutralForeground2);
     text-align: left;
 }
 
 .cell-hit {
-    background: #bfe8cc;
-    box-shadow: inset 0 0 0 2px #2f9e57;
+    background: var(--hit-bg);
+    box-shadow: inset 0 0 0 2px var(--hit-border);
     border-radius: 4px;
 }
 
@@ -195,8 +242,8 @@ code {
    残り試合の結果によらずこの順位が変わらないと判定できたら(StandingsEntry.IsRankConfirmed)、
    確定した的中として金色に切り替える。 */
 .cell-hit-confirmed {
-    background: #ffe1a8;
-    box-shadow: inset 0 0 0 2px #d98c1f;
+    background: var(--hit-confirmed-bg);
+    box-shadow: inset 0 0 0 2px var(--hit-confirmed-border);
     border-radius: 4px;
 }
 
@@ -372,12 +419,12 @@ code {
 
 .comparison-table--combined td.league-col-central.cell-hit,
 .comparison-table--combined td.league-col-pacific.cell-hit {
-    background: #bfe8cc;
+    background: var(--hit-bg);
 }
 
 .comparison-table--combined td.league-col-central.cell-hit-confirmed,
 .comparison-table--combined td.league-col-pacific.cell-hit-confirmed {
-    background: #ffe1a8;
+    background: var(--hit-confirmed-bg);
 }
 
 /* モバイル(リーグ別)の表もリーグ色を薄く敷いて、今どちらのリーグを見ているか強調する。 */

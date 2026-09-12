@@ -1,20 +1,25 @@
 @page "/"
+@implements IDisposable
 @inject SeasonDataService SeasonData
+@inject ThemeState ThemeState
 
 <PageTitle>NPB順位予想 的中トラッカー</PageTitle>
 
 <div class="page-shell">
     <FluentStack Orientation="Microsoft.FluentUI.AspNetCore.Components.Orientation.Horizontal" HorizontalAlignment="HorizontalAlignment.SpaceBetween" VerticalAlignment="VerticalAlignment.Center" Wrap="true" Class="mb-3">
         <h1>NPB順位予想 的中トラッカー</h1>
-        @if (seasons.Count > 1)
-        {
-            <FluentSelect TOption="SeasonInfo" TValue="string"
-                          Items="@seasons"
-                          OptionValue="@(s => s.Season.ToString())"
-                          OptionText="@(s => $"{s.Season}年シーズン{(s.IsFinal ? "(確定)" : "")}")"
-                          @bind-Value="selectedSeasonValue"
-                          @bind-Value:after="OnSeasonValueChanged" />
-        }
+        <FluentStack Orientation="Microsoft.FluentUI.AspNetCore.Components.Orientation.Horizontal" HorizontalGap="8" VerticalAlignment="VerticalAlignment.Center" Wrap="true">
+            @if (seasons.Count > 1)
+            {
+                <FluentSelect TOption="SeasonInfo" TValue="string"
+                              Items="@seasons"
+                              OptionValue="@(s => s.Season.ToString())"
+                              OptionText="@(s => $"{s.Season}年シーズン{(s.IsFinal ? "(確定)" : "")}")"
+                              @bind-Value="selectedSeasonValue"
+                              @bind-Value:after="OnSeasonValueChanged" />
+            }
+            <ThemeToggle />
+        </FluentStack>
     </FluentStack>
 
     @if (isLoading)
@@ -126,7 +131,7 @@
         </FluentStack>
 
         <div class="mb-4">
-            <ApexChart TItem="ScoreSnapshot" Title="@Tabs[selectedTab]" Options="chartOptions" @key="(selectedTab, selectedRangeDays)">
+            <ApexChart TItem="ScoreSnapshot" Title="@Tabs[selectedTab]" Options="chartOptions" @key="(selectedTab, selectedRangeDays, ThemeState.IsDark)">
                 @for (var i = 0; i < PredictorIds.Count; i++)
                 {
                     var id = PredictorIds[i];
@@ -309,6 +314,22 @@
         }
     }
 
+    protected override void OnInitialized()
+    {
+        ThemeState.Changed += OnThemeChanged;
+    }
+
+    private void OnThemeChanged()
+    {
+        BuildChartOptions();
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        ThemeState.Changed -= OnThemeChanged;
+    }
+
     protected override async Task OnInitializedAsync()
     {
         appConfig = await SeasonData.LoadConfigAsync();
@@ -381,6 +402,10 @@
             // 表示期間を絞ると最大値が小さくなり自動スケールでキャリーオーバーラインが
             // プロット範囲外に出てしまうため、Y軸を常に0〜最大値で固定する。
             Yaxis = [new YAxis { Min = 0, Max = maxMatches }],
+            // ApexChartsは軸ラベル・凡例・ツールチップの文字色をThemeで決めており、ページ側のダーク/ライト
+            // 切り替えには連動しないため、ThemeState(ThemeToggleが更新)を見て明示的に合わせる。
+            // (ApexCharts.Theme/Modeは Microsoft.FluentUI...Theme と型名が衝突するため完全修飾する)
+            Theme = new ApexCharts.Theme { Mode = ThemeState.IsDark ? ApexCharts.Mode.Dark : ApexCharts.Mode.Light },
         };
 
         if (selectedTab == "total")

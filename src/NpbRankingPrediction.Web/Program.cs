@@ -11,6 +11,7 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 builder.Services.AddScoped<SeasonDataService>();
+builder.Services.AddScoped<ThemeState>();
 builder.Services.AddApexCharts();
 builder.Services.AddFluentUIComponents();
 
