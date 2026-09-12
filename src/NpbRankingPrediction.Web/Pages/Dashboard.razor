@@ -131,7 +131,7 @@
         </FluentStack>
 
         <div class="mb-4">
-            <ApexChart TItem="ScoreSnapshot" Title="@Tabs[selectedTab]" Options="chartOptions" @key="(selectedTab, selectedRangeDays)">
+            <ApexChart TItem="ScoreSnapshot" Title="@Tabs[selectedTab]" Options="chartOptions" @key="(selectedTab, selectedRangeDays, ThemeState.IsDark)">
                 @for (var i = 0; i < PredictorIds.Count; i++)
                 {
                     var id = PredictorIds[i];
