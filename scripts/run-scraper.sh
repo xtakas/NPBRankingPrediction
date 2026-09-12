@@ -17,13 +17,54 @@
 # root以外のユーザーで実行する場合 /var/log/ は書き込めないため、$HOME 配下などに出力する:
 #   0,30 21-23 * * * /path/to/NPBRankingPrediction/scripts/run-scraper.sh >> $HOME/npb-scraper.log 2>&1
 #   0 0,1 * * *       /path/to/NPBRankingPrediction/scripts/run-scraper.sh >> $HOME/npb-scraper.log 2>&1
+#
+# 手動実行時の引数:
+#   ./run-scraper.sh [SEASON] [--backfill] [--finalize] [--from-month N] [--to-month N]
+# SEASON(年)を省略すると当年になる。--backfill/--finalize/--from-month/--to-month は
+# そのままScraper本体に転送される(例: ./run-scraper.sh 2026 --backfill)。
+# これら以外の未知のオプションはエラーで停止する(誤ってSEASONとして解釈され、
+# 分かりにくいクラッシュになるのを防ぐため)。
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-SEASON="${1:-$(date +%Y)}"
 SCRAPER_BIN="${SCRAPER_BIN:-$HOME/npb-scraper-bin/NpbRankingPrediction.Scraper}"
+
+SEASON="$(date +%Y)"
+EXTRA_ARGS=()
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --backfill|--finalize)
+            EXTRA_ARGS+=("$1")
+            shift
+            ;;
+        --from-month|--to-month)
+            if [ $# -lt 2 ]; then
+                echo "ERROR: $1 requires a value" >&2
+                exit 1
+            fi
+            EXTRA_ARGS+=("$1" "$2")
+            shift 2
+            ;;
+        --*)
+            echo "ERROR: unknown option: $1" >&2
+            echo "  Supported: [SEASON] [--backfill] [--finalize] [--from-month N] [--to-month N]" >&2
+            exit 1
+            ;;
+        *)
+            SEASON="$1"
+            shift
+            ;;
+    esac
+done
+
+if ! [[ "$SEASON" =~ ^[0-9]+$ ]]; then
+    echo "ERROR: invalid season '$SEASON' (expected a 4-digit year)" >&2
+    echo "  Supported: [SEASON] [--backfill] [--finalize] [--from-month N] [--to-month N]" >&2
+    exit 1
+fi
 
 if [ ! -x "$SCRAPER_BIN" ]; then
     echo "[$(date '+%F %T')] ERROR: scraper executable not found or not executable: $SCRAPER_BIN" >&2
@@ -43,8 +84,14 @@ if ! git pull --ff-only; then
     exit 1
 fi
 
-echo "[$(date '+%F %T')] running scraper for season $SEASON"
-"$SCRAPER_BIN" --season "$SEASON" --data-dir data
+if [ ${#EXTRA_ARGS[@]} -gt 0 ]; then
+    echo "[$(date '+%F %T')] running scraper for season $SEASON (${EXTRA_ARGS[*]})"
+else
+    echo "[$(date '+%F %T')] running scraper for season $SEASON"
+fi
+# 空配列を "${EXTRA_ARGS[@]}" として展開すると、古いbash(4.4未満)ではset -uで
+# "unbound variable" になることがあるため、+ を使った安全な展開にしている。
+"$SCRAPER_BIN" --season "$SEASON" --data-dir data "${EXTRA_ARGS[@]+"${EXTRA_ARGS[@]}"}"
 
 if git status --porcelain data | grep -q .; then
     echo "[$(date '+%F %T')] data changed, committing"
