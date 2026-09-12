@@ -1,29 +1,18 @@
 <div class="table-scroll">
-    <table class="fluent-table standings-table">
-        <thead>
-            <tr>
-                <th class="text-center">順位</th>
-                <th>チーム名</th>
-                <th class="text-center">勝</th>
-                <th class="text-center">敗</th>
-                <th class="text-center">分</th>
-                <th class="text-center">ゲーム差</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var entry in Entries)
-            {
-                <tr>
-                    <td class="text-center">@entry.Rank</td>
-                    <td><TeamBadge TeamCode="@entry.TeamCode" /></td>
-                    <td class="text-center">@entry.Wins</td>
-                    <td class="text-center">@entry.Losses</td>
-                    <td class="text-center">@entry.Draws</td>
-                    <td class="text-center">@FormatGamesBehind(entry)</td>
-                </tr>
-            }
-        </tbody>
-    </table>
+    <FluentDataGrid Items="@Entries.AsQueryable()" Class="standings-grid" GenerateHeader="DataGridGeneratedHeaderType.Sticky">
+        <TemplateColumn Title="順位" Align="DataGridCellAlignment.Center" Width="2.2rem" Class="standings-grid-rank">
+            @context.Rank
+        </TemplateColumn>
+        <TemplateColumn Title="チーム名" Width="1fr" Class="standings-grid-team">
+            <TeamBadge TeamCode="@context.TeamCode" />
+        </TemplateColumn>
+        <PropertyColumn Property="@(e => e.Wins)" Title="勝" Align="DataGridCellAlignment.Center" Width="2.2rem" />
+        <PropertyColumn Property="@(e => e.Losses)" Title="敗" Align="DataGridCellAlignment.Center" Width="2.2rem" />
+        <PropertyColumn Property="@(e => e.Draws)" Title="分" Align="DataGridCellAlignment.Center" Width="2.2rem" />
+        <TemplateColumn Title="ゲーム差" Align="DataGridCellAlignment.Center" Width="3rem">
+            @FormatGamesBehind(context)
+        </TemplateColumn>
+    </FluentDataGrid>
 </div>
 
 @code {

@@ -4,48 +4,40 @@
     各予想者の的中状況を縦にたどって見られる。
 *@
 <div class="table-scroll">
-    <table class="fluent-table comparison-table @(League == League.Central ? "prediction-table--central" : "prediction-table--pacific")">
-        <thead>
-            <tr>
-                <th>予想者</th>
-                @for (var rank = 1; rank <= RankCount; rank++)
-                {
-                    <th class="text-center">@rank 位</th>
+    <FluentDataGrid Items="@PredictorIds.AsQueryable()"
+                    Class="@("comparison-grid " + (League == League.Central ? "prediction-table--central" : "prediction-table--pacific"))"
+                    GenerateHeader="DataGridGeneratedHeaderType.Sticky">
+        <TemplateColumn Title="予想者" Width="5.6rem" Class="comparison-grid-predictor">
+            <span class="predictor-badge" title="@($"#{context}")">@context</span>
+            <span class="predictor-name">@NameFor(context)</span>
+        </TemplateColumn>
+        @foreach (var rank in Enumerable.Range(1, RankCount))
+        {
+            <TemplateColumn Title="@($"{rank} 位")" Align="DataGridCellAlignment.Center" Width="2.1rem">
+                @{
+                    var predictedTeam = PredictedTeamAt(context, rank);
+                    var isHit = predictedTeam is not null && predictedTeam == ActualTeamAt(rank);
+                    var isConfirmedHit = isHit && (IsSeasonFinal || IsRankConfirmedAt(rank));
                 }
-                <th class="text-center">的中</th>
-                <th class="text-center total-column">合計</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var id in PredictorIds)
-            {
-                <tr>
-                    <td>
-                        <span class="predictor-badge" title="@($"#{id}")">@id</span>
-                        <span class="predictor-name">@NameFor(id)</span>
-                    </td>
-                    @for (var rank = 1; rank <= RankCount; rank++)
+                <span class="grid-cell-highlight @(isConfirmedHit ? "cell-hit-confirmed" : isHit ? "cell-hit" : "")">
+                    @if (predictedTeam is not null)
                     {
-                        var predictedTeam = PredictedTeamAt(id, rank);
-                        var isHit = predictedTeam is not null && predictedTeam == ActualTeamAt(rank);
-                        var isConfirmedHit = isHit && (IsSeasonFinal || IsRankConfirmedAt(rank));
-                        <td class="text-center @(isConfirmedHit ? "cell-hit-confirmed" : isHit ? "cell-hit" : "")">
-                            @if (predictedTeam is not null)
-                            {
-                                <TeamBadge TeamCode="@predictedTeam" ShowFullName="false" />
-                            }
-                            else
-                            {
-                                <span>-</span>
-                            }
-                        </td>
+                        <TeamBadge TeamCode="@predictedTeam" ShowFullName="false" />
                     }
-                    <td class="text-center fw-bold">@MatchesFor(id) / @RankCount</td>
-                    <td class="text-center total-column @(IsCarryoverClear(id) ? "cell-hit fw-bold" : "")">@TotalMatchesFor(id) / 12</td>
-                </tr>
-            }
-        </tbody>
-    </table>
+                    else
+                    {
+                        <span>-</span>
+                    }
+                </span>
+            </TemplateColumn>
+        }
+        <TemplateColumn Title="的中" Align="DataGridCellAlignment.Center" Width="2.8rem" Class="fw-bold">
+            @MatchesFor(context) / @RankCount
+        </TemplateColumn>
+        <TemplateColumn Title="合計" Align="DataGridCellAlignment.Center" Width="3.2rem" Class="total-column">
+            <span class="grid-cell-highlight @(IsCarryoverClear(context) ? "cell-hit fw-bold" : "")">@TotalMatchesFor(context) / 12</span>
+        </TemplateColumn>
+    </FluentDataGrid>
 </div>
 
 @code {

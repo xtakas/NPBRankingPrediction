@@ -76,20 +76,20 @@
             </FluentMessageBar>
         }
 
-        <nav class="view-tabs" role="tablist" aria-label="表示切替">
-            <button type="button" role="tab" aria-selected="@(activeViewTab == ViewTab.Leaderboard ? "true" : "false")" @onclick="@(() => activeViewTab = ViewTab.Leaderboard)">リーダーボード</button>
-            <button type="button" role="tab" aria-selected="@(activeViewTab == ViewTab.Compare ? "true" : "false")" @onclick="@(() => activeViewTab = ViewTab.Compare)">予想比較</button>
-            <button type="button" role="tab" aria-selected="@(activeViewTab == ViewTab.Chart ? "true" : "false")" @onclick="@(() => activeViewTab = ViewTab.Chart)">グラフ</button>
-        </nav>
+        <FluentTabs @bind-ActiveTabId="activeViewTabId" Class="mb-3">
+            <FluentTab Id="leaderboard" Header="リーダーボード" />
+            <FluentTab Id="compare" Header="予想比較" />
+            <FluentTab Id="chart" Header="グラフ" />
+        </FluentTabs>
 
         <div class="view-panels">
-            @if (activeViewTab == ViewTab.Leaderboard)
+            @if (activeViewTabId == "leaderboard")
             {
                 <Leaderboard Scores="DisplayedPredictorScores" Names="predictorNames" TopCount="appConfig?.LeaderboardTopCount"
                              IsSeasonFinal="EffectiveSeasonFinalForDisplay"
                              Title="@(EffectiveSeasonFinalForDisplay ? "最終リーダーボード(セ・パ合計)" : "リーダーボード(セ・パ合計)")" />
             }
-            else if (activeViewTab == ViewTab.Compare)
+            else if (activeViewTabId == "compare")
             {
                 <div class="league-tabs-mobile-only">
                     <FluentTabs @bind-ActiveTabId="selectedLeagueTab" Class="mb-3">
@@ -99,26 +99,29 @@
                 </div>
 
                 <div class="league-columns">
-                    <div class="league-section @(selectedLeagueTab == "central" ? "active" : "")">
+                    <FluentCard Class="@($"league-section {(selectedLeagueTab == "central" ? "active" : "")}")">
                         <div class="section-title section-title--central mt-0">セ・リーグ</div>
                         <AnswerTable Entries="CentralEntries" />
                         <div class="prediction-table-mobile-only">
                             <PredictionComparisonTable Entries="CentralEntries" Predictions="predictions.Predictors" Names="predictorNames" Scores="DisplayedPredictorScores" League="League.Central" IsSeasonFinal="EffectiveSeasonFinalForDisplay" />
                         </div>
-                    </div>
-                    <div class="league-section @(selectedLeagueTab == "pacific" ? "active" : "")">
+                    </FluentCard>
+                    <FluentCard Class="@($"league-section {(selectedLeagueTab == "pacific" ? "active" : "")}")">
                         <div class="section-title section-title--pacific mt-0">パ・リーグ</div>
                         <AnswerTable Entries="PacificEntries" />
                         <div class="prediction-table-mobile-only">
                             <PredictionComparisonTable Entries="PacificEntries" Predictions="predictions.Predictors" Names="predictorNames" Scores="DisplayedPredictorScores" League="League.Pacific" IsSeasonFinal="EffectiveSeasonFinalForDisplay" />
                         </div>
-                    </div>
+                    </FluentCard>
                 </div>
 
                 @* セ・パの予想表を横に並べると上の順位表の高さの違いで行がズレるため、
-                   デスクトップでは1つにまとめた表を使う。 *@
+                   デスクトップでは1つにまとめた表を使う。FluentDataGridの見出しがセ・パ2段
+                   構成と相性が悪いため、この結合表だけは素の<table>のままにしている。 *@
                 <div class="prediction-table-desktop-only">
-                    <CombinedPredictionComparisonTable CentralEntries="CentralEntries" PacificEntries="PacificEntries" Predictions="predictions.Predictors" Names="predictorNames" Scores="DisplayedPredictorScores" IsSeasonFinal="EffectiveSeasonFinalForDisplay" />
+                    <FluentCard>
+                        <CombinedPredictionComparisonTable CentralEntries="CentralEntries" PacificEntries="PacificEntries" Predictions="predictions.Predictors" Names="predictorNames" Scores="DisplayedPredictorScores" IsSeasonFinal="EffectiveSeasonFinalForDisplay" />
+                    </FluentCard>
                 </div>
             }
             else
@@ -168,11 +171,10 @@
 </div>
 
 @code {
-    // 縦スクロールを避けるため、順位表/予想比較/グラフをタブで切り替える(常に1つだけDOMに存在させ、
-    // 各タブの中身だけ .view-panels 内で独立してスクロールする)。
-    private enum ViewTab { Leaderboard, Compare, Chart }
-
-    private ViewTab activeViewTab = ViewTab.Leaderboard;
+    // 縦スクロールを避けるため、リーダーボード/予想比較/グラフをタブで切り替える(常に1つだけDOMに
+    // 存在させ、各タブの中身だけ .view-panels 内で独立してスクロールする)。FluentTabsは見出し
+    // (ヘッダー)だけに使い、中身はselectedLeagueTabと同じ「文字列IDで@ifして出し分ける」パターンにする。
+    private string activeViewTabId = "leaderboard";
 
     private static readonly Dictionary<string, string> Tabs = new()
     {

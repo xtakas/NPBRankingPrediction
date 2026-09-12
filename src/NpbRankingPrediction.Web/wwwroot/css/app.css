@@ -149,33 +149,9 @@ code {
     height: calc(100dvh - 1.1rem);
 }
 
-/* 順位表/予想比較/グラフの切り替えタブ。縦スクロールを避けるため、内容はこのタブで
-   区切ってから .view-panels 側で個別にスクロールさせる(全部を1画面に収めるのではなく、
-   タブ単位で画面に収まる量に減らすアプローチ)。 */
-.view-tabs {
-    display: flex;
-    gap: 4px;
-    border-bottom: 1px solid var(--colorNeutralStroke2);
-    margin-bottom: 1rem;
-}
-
-.view-tabs button {
-    font: inherit;
-    font-weight: 700;
-    font-size: 0.9rem;
-    padding: 0.6rem 1rem 0.5rem;
-    background: transparent;
-    border: none;
-    border-bottom: 3px solid transparent;
-    color: var(--colorNeutralForeground2);
-    cursor: pointer;
-}
-
-.view-tabs button[aria-selected="true"] {
-    color: var(--colorBrandForeground1, #1a8a44);
-    border-bottom-color: var(--colorBrandForeground1, #1a8a44);
-}
-
+/* リーダーボード/予想比較/グラフの切り替えは<FluentTabs>(見出しのみ、中身は別途@ifで出し分け)
+   を使う。縦スクロールを避けるため、内容はこのタブで区切ってから .view-panels 側で個別に
+   スクロールさせる(全部を1画面に収めるのではなく、タブ単位で画面に収まる量に減らすアプローチ)。 */
 .view-panels {
     flex: 1;
     min-height: 300px;
@@ -281,6 +257,17 @@ code {
     text-align: left;
 }
 
+/* FluentDataGridのTemplateColumnは<td>自体にセル単位のクラスを付けられないため、
+   セル内容をこの<span>で包んで的中ハイライトの見た目(cell-hit/cell-hit-confirmed)を再現する。 */
+.grid-cell-highlight {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.6rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
 .cell-hit {
     background: var(--hit-bg);
     box-shadow: inset 0 0 0 2px var(--hit-border);
@@ -316,6 +303,35 @@ code {
 
 .team-fullname {
     white-space: nowrap;
+}
+
+/* FluentDataGridはCSS Gridでセル幅を組むため、Widthで指定した列幅より内容(長いチーム名など)が
+   大きいとグリッドトラック自体が広がってしまう(CSS Gridのmin-width:autoの既定挙動)。
+   min-width:0で明示的に上書きし、Widthどおりに収まるようにする。 */
+table.fluent-data-grid td,
+table.fluent-data-grid th {
+    min-width: 0;
+}
+
+/* FluentDataGridの既定セルpadding(左右18px、bundle.scp.cssに直書き)は、順位表・予想比較表のような
+   多列で1列ごとの幅が狭いグリッドだと数字1〜2文字ですら省略記号で切れてしまうほど大きい。
+   このアプリの2つの密なグリッドだけ、詰めたpaddingで上書きする(特異度をFluent既定より高くするため
+   table.fluent-data-grid.<独自クラス> td の形にしている)。 */
+table.fluent-data-grid.standings-grid td:not([col-select="true"]),
+table.fluent-data-grid.comparison-grid td:not([col-select="true"]) {
+    padding: 0 4px;
+}
+
+.standings-grid-team {
+    overflow: hidden;
+}
+
+.standings-grid-team .team-fullname {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: inline-block;
+    max-width: calc(100% - 1.9rem);
+    vertical-align: middle;
 }
 
 .standings-table {
