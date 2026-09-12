@@ -200,6 +200,27 @@ dotnet run --project src/NpbRankingPrediction.Scraper -- --season 2026 --data-di
 - 確定後にWeb画面を開くと「✓ 2026年シーズン 最終順位確定」のようなバナーが表示され、「現在の的中状況」の見出しも「最終的中状況」に変わります。
 - 確定済みのシーズンに対して `--finalize` なしで実行すると、更新をスキップします(誤って上書きしないための安全策)。再取得したい場合のみ `--finalize` を付けて再実行してください。
 
+## ブランチ運用
+
+`master` は自宅Linux機のcronによる日次データコミットの受け皿であり、pushのたびに GitHub Actions (`deploy.yml`) が自動でビルド・GitHub Pagesへのデプロイを行う「本番ブランチ」です。そのため以下のルールで運用します。
+
+- 開発は `feature/*` / `fix/*` などのブランチで行い、`dotnet build` が通ること・`dotnet run --project src/NpbRankingPrediction.Web` でのローカル動作確認を済ませてから `master` へマージします。
+- PRを作成すると `.github/workflows/build-check.yml` が自動でソリューション全体をビルド検証します(デプロイはしません)。
+- **`master` にマージ済みのコミットを書き換える操作(force-push、rebase、amendしたコミットのpush等)は行わないでください。** 自宅Linux機の `scripts/run-scraper.sh` は毎回 `git pull --ff-only` を行う前提で動いており(scripts/run-scraper.sh参照)、履歴が書き換わるとこのpullが失敗し、手動での復旧が必要になります。
+- `NpbRankingPrediction.Scraper` のコードを変更しても、自宅Linux機で実際に動いている単体実行ファイルは自動更新されません(上記「5. 日次の自動更新」参照)。そのため、Scraper側の変更を `master` にマージしても再publish・再配置するまで本番cronの挙動は変わらない、という安全弁があります。
+
+## オフシーズン運用
+
+- レギュラーシーズン終了後は、`--finalize` を実行して `seasons.json` の `isFinal` を `true` にしてから cron を停止してください。先に停止だけすると、`isFinal` が `false` のままなので、Web画面の「順位データの自動更新が止まっている可能性があります」という警告バナー(36時間更新がないと表示)がオフシーズン中ずっと出続けてしまいます。
+- cronの停止は `crontab -e` で該当行を削除またはコメントアウトするだけで構いません。リポジトリ本体や自宅機に配置した単体実行ファイルはそのまま残しておき、次シーズンも流用できます。
+- オフシーズン中はcronによる `data/` への自動コミットが発生しないため、`master` へのマージ時にcronの自動コミットと鉢合わせる心配が事実上なくなる期間です。大きめのリファクタや構成変更(下記「将来のAzure移行」など)はこの時期にまとめて行うのがローリスクです。ただし `feature/*` ブランチでの作業自体はオフシーズンでも継続してください。
+- シーズン再開前のチェックリスト:
+  1. `data/{year}/predictions.json` を新規作成する(上記「1. 予想データを作成する」参照)。
+  2. 開幕後に `--backfill` で開幕分を取得するか、開幕日からcronを稼働させる。
+  3. `crontab -e` でcronを再度有効化する。
+  4. `scripts/run-scraper.sh` を一度手動実行し、`data/seasons.json` の `lastScrapedAtUtc` が更新されることを確認する。
+  5. `seasons.json` に新シーズンのエントリが追加されていることを確認する。
+
 ## 将来のAzure移行
 
 `NpbRankingPrediction.Core` の `IDataStore` インターフェースを介してデータアクセスを抽象化しているため、将来的に以下のような移行が可能です。
