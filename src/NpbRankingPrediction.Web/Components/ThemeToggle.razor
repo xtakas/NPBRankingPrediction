@@ -1,0 +1,66 @@
+@inject IThemeService ThemeService
+@inject ThemeState ThemeState
+@inject IJSRuntime JS
+
+<div class="theme-toggle" role="group" aria-label="表示テーマ切替">
+    @foreach (var option in Options)
+    {
+        <button type="button"
+                class="theme-toggle-button @(selectedMode == option.Mode ? "active" : "")"
+                aria-pressed="@(selectedMode == option.Mode)"
+                @onclick="@(() => SelectAsync(option.Mode))">
+            @option.Label
+        </button>
+    }
+</div>
+
+@code {
+    private const string StorageKey = "npb-theme-mode";
+
+    private static readonly (ThemeMode Mode, string Label)[] Options =
+    [
+        (ThemeMode.System, "自動"),
+        (ThemeMode.Light, "ライト"),
+        (ThemeMode.Dark, "ダーク"),
+    ];
+
+    private ThemeMode selectedMode = ThemeMode.System;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        // IThemeServiceには「現在選択中のモード」を読み戻すAPIが無いため、トグルUI自体の見た目(押下状態)は
+        // このコンポーネント独自のlocalStorageキーで復元する。実際のライト/ダーク適用自体はFluentUI側が
+        // 起動時に自前のストレージから復元済みなので、ここでSetThemeAsyncを呼び直す必要はない。
+        var stored = await JS.InvokeAsync<string?>("localStorage.getItem", StorageKey);
+        selectedMode = stored switch
+        {
+            "light" => ThemeMode.Light,
+            "dark" => ThemeMode.Dark,
+            _ => ThemeMode.System,
+        };
+
+        ThemeState.SetDark(await ThemeService.IsDarkModeAsync());
+        StateHasChanged();
+    }
+
+    private async Task SelectAsync(ThemeMode mode)
+    {
+        selectedMode = mode;
+        await ThemeService.SetThemeAsync(mode);
+
+        var value = mode switch
+        {
+            ThemeMode.Light => "light",
+            ThemeMode.Dark => "dark",
+            _ => "system",
+        };
+        await JS.InvokeVoidAsync("localStorage.setItem", StorageKey, value);
+
+        ThemeState.SetDark(await ThemeService.IsDarkModeAsync());
+    }
+}
