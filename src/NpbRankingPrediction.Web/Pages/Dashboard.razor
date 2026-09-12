@@ -5,8 +5,12 @@
 
 <PageTitle>NPB順位予想 的中トラッカー</PageTitle>
 
-<div class="page-shell">
-    <FluentStack Orientation="Microsoft.FluentUI.AspNetCore.Components.Orientation.Horizontal" HorizontalAlignment="HorizontalAlignment.SpaceBetween" VerticalAlignment="VerticalAlignment.Center" Wrap="true" Class="mb-3">
+@* FluentUI v5の<FluentLayout>はヘッダー/フッターの高さが固定(overflow:hidden)で、
+   タイトルが折り返す/長くなるとすぐ中身が切れてしまい、このアプリの可変長タイトル+
+   操作行と相性が悪かった。position:stickyの素のheader/footerの方が高さを固定せずに
+   同じ「ヘッダー・フッターを常に見せる」目的を安全に達成できるためこちらを採用する。 *@
+<header class="app-header">
+    <FluentStack Orientation="Microsoft.FluentUI.AspNetCore.Components.Orientation.Horizontal" HorizontalAlignment="HorizontalAlignment.SpaceBetween" VerticalAlignment="VerticalAlignment.Center" Wrap="true" Class="header-row">
         <h1>NPB順位予想 的中トラッカー</h1>
         <FluentStack Orientation="Microsoft.FluentUI.AspNetCore.Components.Orientation.Horizontal" HorizontalGap="8" VerticalAlignment="VerticalAlignment.Center" Wrap="true">
             @if (seasons.Count > 1)
@@ -21,70 +25,63 @@
             <ThemeToggle />
         </FluentStack>
     </FluentStack>
+</header>
 
-    @if (isLoading)
-    {
-        <p>読み込み中...</p>
-    }
-    else if (standings is null || predictions is null || scores is null || standings.Snapshots.Count == 0)
-    {
-        <FluentMessageBar Intent="MessageBarIntent.Warning" Title="データがありません" AllowDismiss="false">
-            @(selectedSeason)年シーズンのデータがまだありません。predictions.json が配置されているか、スクレイパーが実行済みか確認してください。
-        </FluentMessageBar>
-    }
-    else
-    {
-        @if (IsSelectedSeasonFinal)
-        {
-            <FluentMessageBar Intent="MessageBarIntent.Success" AllowDismiss="false" Class="mb-3">
-                ✓ @(selectedSeason)年シーズン 最終順位確定(@LatestDate?.ToString("yyyy年M月d日"))
-            </FluentMessageBar>
-        }
-        else
-        {
-            @if (IsScrapeStale)
+<main>
+    <div class="page-shell">
+            @if (isLoading)
             {
-                <FluentMessageBar Intent="MessageBarIntent.Warning" AllowDismiss="false" Class="mb-3">
-                    ⚠ 順位データの自動更新が @StaleHoursText 時間以上止まっている可能性があります(自宅サーバーのcronをご確認ください)。
+                <p>読み込み中...</p>
+            }
+            else if (!HasData)
+            {
+                <FluentMessageBar Intent="MessageBarIntent.Warning" Title="データがありません" AllowDismiss="false">
+                    @(selectedSeason)年シーズンのデータがまだありません。predictions.json が配置されているか、スクレイパーが実行済みか確認してください。
                 </FluentMessageBar>
             }
-            <p class="muted-text">
-                最終更新日: @(LatestDate?.ToString("yyyy年M月d日"))時点の順位(シーズン進行中)
-                @if (LastScrapedAtLocalText is not null)
+            else
+            {
+                @if (IsSelectedSeasonFinal)
                 {
-                    <text> ・ データ取得: @LastScrapedAtLocalText</text>
+                    <FluentMessageBar Intent="MessageBarIntent.Success" AllowDismiss="false" Class="mb-3">
+                        ✓ @(selectedSeason)年シーズン 最終順位確定(@LatestDate?.ToString("yyyy年M月d日"))
+                    </FluentMessageBar>
                 }
-            </p>
-        }
+                else if (IsScrapeStale)
+                {
+                    <FluentMessageBar Intent="MessageBarIntent.Warning" AllowDismiss="false" Class="mb-3">
+                        ⚠ 順位データの自動更新が @StaleHoursText 時間以上止まっている可能性があります(自宅サーバーのcronをご確認ください)。
+                    </FluentMessageBar>
+                }
 
-        <div class="date-view-picker mb-3">
-            <label for="viewDateInput">順位・的中を表示する日:</label>
-            <input id="viewDateInput" type="date" class="date-view-picker-input"
-                   value="@((selectedViewDate ?? LatestDate)?.ToString("yyyy-MM-dd"))"
-                   min="@MinDateText" max="@MaxDateText"
-                   @onchange="OnViewDateChanged" />
-            @if (IsViewingPastDate)
-            {
-                <FluentButton Appearance="ButtonAppearance.Outline" OnClick="ResetToLatest">最新に戻す</FluentButton>
-            }
-        </div>
+                <div class="date-view-picker mb-3">
+                    <label for="viewDateInput">順位・的中を表示する日:</label>
+                    <input id="viewDateInput" type="date" class="date-view-picker-input"
+                           value="@((selectedViewDate ?? LatestDate)?.ToString("yyyy-MM-dd"))"
+                           min="@MinDateText" max="@MaxDateText"
+                           @onchange="OnViewDateChanged" />
+                    @if (IsViewingPastDate)
+                    {
+                        <FluentButton Appearance="ButtonAppearance.Outline" OnClick="ResetToLatest">最新に戻す</FluentButton>
+                    }
+                </div>
 
-        @if (IsViewingPastDate)
-        {
-            <FluentMessageBar Intent="MessageBarIntent.Info" AllowDismiss="false" Class="mb-3">
-                📅 @(ViewedDate?.ToString("yyyy年M月d日"))時点の順位・的中状況を表示しています。
-            </FluentMessageBar>
-        }
+                @if (IsViewingPastDate)
+                {
+                    <FluentMessageBar Intent="MessageBarIntent.Info" AllowDismiss="false" Class="mb-3">
+                        📅 @(ViewedDate?.ToString("yyyy年M月d日"))時点の順位・的中状況を表示しています。
+                    </FluentMessageBar>
+                }
 
-        <FluentTabs @bind-ActiveTabId="activeViewTabId" Class="mb-3">
-            <FluentTab Id="leaderboard" Header="リーダーボード" />
-            <FluentTab Id="compare" Header="予想比較" />
-            <FluentTab Id="chart" Header="グラフ" />
-        </FluentTabs>
+                <FluentTabs @bind-ActiveTabId="activeViewTabId" Class="mb-3">
+                    <FluentTab Id="leaderboard" Header="リーダーボード" />
+                    <FluentTab Id="compare" Header="予想比較" />
+                    <FluentTab Id="chart" Header="グラフ" />
+                </FluentTabs>
 
-        <div class="view-panels">
-            @if (activeViewTabId == "leaderboard")
-            {
+                <div class="view-panels">
+                    @if (activeViewTabId == "leaderboard")
+                    {
                 <Leaderboard Scores="DisplayedPredictorScores" Names="predictorNames" TopCount="appConfig?.LeaderboardTopCount"
                              IsSeasonFinal="EffectiveSeasonFinalForDisplay"
                              Title="@(EffectiveSeasonFinalForDisplay ? "最終リーダーボード(セ・パ合計)" : "リーダーボード(セ・パ合計)")" />
@@ -103,14 +100,14 @@
                         <div class="section-title section-title--central mt-0">セ・リーグ</div>
                         <AnswerTable Entries="CentralEntries" />
                         <div class="prediction-table-mobile-only">
-                            <PredictionComparisonTable Entries="CentralEntries" Predictions="predictions.Predictors" Names="predictorNames" Scores="DisplayedPredictorScores" League="League.Central" IsSeasonFinal="EffectiveSeasonFinalForDisplay" />
+                            <PredictionComparisonTable Entries="CentralEntries" Predictions="predictions!.Predictors" Names="predictorNames" Scores="DisplayedPredictorScores" League="League.Central" IsSeasonFinal="EffectiveSeasonFinalForDisplay" />
                         </div>
                     </FluentCard>
                     <FluentCard Class="@($"league-section {(selectedLeagueTab == "pacific" ? "active" : "")}")">
                         <div class="section-title section-title--pacific mt-0">パ・リーグ</div>
                         <AnswerTable Entries="PacificEntries" />
                         <div class="prediction-table-mobile-only">
-                            <PredictionComparisonTable Entries="PacificEntries" Predictions="predictions.Predictors" Names="predictorNames" Scores="DisplayedPredictorScores" League="League.Pacific" IsSeasonFinal="EffectiveSeasonFinalForDisplay" />
+                            <PredictionComparisonTable Entries="PacificEntries" Predictions="predictions!.Predictors" Names="predictorNames" Scores="DisplayedPredictorScores" League="League.Pacific" IsSeasonFinal="EffectiveSeasonFinalForDisplay" />
                         </div>
                     </FluentCard>
                 </div>
@@ -120,7 +117,7 @@
                    構成と相性が悪いため、この結合表だけは素の<table>のままにしている。 *@
                 <div class="prediction-table-desktop-only">
                     <FluentCard>
-                        <CombinedPredictionComparisonTable CentralEntries="CentralEntries" PacificEntries="PacificEntries" Predictions="predictions.Predictors" Names="predictorNames" Scores="DisplayedPredictorScores" IsSeasonFinal="EffectiveSeasonFinalForDisplay" />
+                        <CombinedPredictionComparisonTable CentralEntries="CentralEntries" PacificEntries="PacificEntries" Predictions="predictions!.Predictors" Names="predictorNames" Scores="DisplayedPredictorScores" IsSeasonFinal="EffectiveSeasonFinalForDisplay" />
                     </FluentCard>
                 </div>
             }
@@ -166,9 +163,24 @@
                     </ApexChart>
                 </div>
             }
+                </div>
+            }
         </div>
-    }
-</div>
+</main>
+
+
+@if (HasData && !IsSelectedSeasonFinal)
+{
+    <footer class="app-footer">
+        <p class="muted-text footer-status">
+            最終更新日: @(LatestDate?.ToString("yyyy年M月d日"))時点の順位(シーズン進行中)
+            @if (LastScrapedAtLocalText is not null)
+            {
+                <text> ・ データ取得: @LastScrapedAtLocalText</text>
+            }
+        </p>
+    </footer>
+}
 
 @code {
     // 縦スクロールを避けるため、リーダーボード/予想比較/グラフをタブで切り替える(常に1つだけDOMに
@@ -243,6 +255,8 @@
     // cronが1日1回動く前提で、これより長く更新が止まっていたら異常とみなして警告する
     // (試合のない日が1日挟まっても超えない程度の余裕を持たせている)。
     private const int StaleThresholdHours = 36;
+
+    private bool HasData => standings is not null && predictions is not null && scores is not null && standings.Snapshots.Count > 0;
 
     private bool IsSelectedSeasonFinal => seasons.FirstOrDefault(s => s.Season == selectedSeason)?.IsFinal ?? false;
 

@@ -34,11 +34,18 @@ h1:focus {
     outline: none;
 }
 
-/* 縦スクロールを避けるレイアウト(.view-panelsが確保できる高さを増やすため)、
-   狭い画面ではタイトルの折り返しで無駄にヘッダーの高さを取らないよう縮小する。 */
+/* ヘッダーは中身に合わせて伸びる(固定高さ・overflow:hiddenではない)ため折り返しても内容が
+   切れる心配はないが、既定のh1サイズ(Fluentの--fontSizeHero900、40px相当)だと狭い画面で
+   無駄に高さを取るため縮小する。default-fuib.cssのh1{font-size:...}は実行時に動的注入され
+   同一特異度だと読み込み順で負けるため、.header-row h1 とクラスを1段足して確実に上書きする。 */
+.header-row h1 {
+    font-size: 1.5rem;
+    margin: 0;
+}
+
 @media (max-width: 480px) {
-    .page-shell h1 {
-        font-size: 1.3rem;
+    .header-row h1 {
+        font-size: 1.2rem;
     }
 }
 
@@ -140,23 +147,38 @@ code {
     max-width: 1120px;
     margin: 0 auto;
     padding: 1.25rem 1.25rem 3rem;
-    display: flex;
-    flex-direction: column;
-    /* ビューポート内に収め、タブ切り替え時に中身(.view-panels)だけを独立してスクロールさせる。
-       ヘッダー側のメッセージバー等が異常に長くなり .view-panels の最低確保分(min-height)すら
-       収まらない場合は、bodyのoverflow:visible上書き(下記)により素のページスクロールへ
-       フォールバックする(overflow:hiddenにはしないので内容が見えなくなることはない)。 */
-    height: calc(100dvh - 1.1rem);
 }
 
-/* リーダーボード/予想比較/グラフの切り替えは<FluentTabs>(見出しのみ、中身は別途@ifで出し分け)
-   を使う。縦スクロールを避けるため、内容はこのタブで区切ってから .view-panels 側で個別に
-   スクロールさせる(全部を1画面に収めるのではなく、タブ単位で画面に収まる量に減らすアプローチ)。 */
 .view-panels {
-    flex: 1;
-    min-height: 300px;
-    overflow-y: auto;
     padding-bottom: 0.25rem;
+}
+
+/* ヘッダー・フッターは高さを固定せず(中身に応じて伸縮)、position:stickyで画面の上下に
+   貼り付ける。ページ自体は通常通り縦スクロールし、ヘッダー・フッターだけが常に見え続ける。 */
+.app-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background-color: var(--colorNeutralBackground1);
+    border-bottom: 1px solid var(--colorNeutralStroke2);
+}
+
+.app-footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    background-color: var(--colorNeutralBackground1);
+    border-top: 1px solid var(--colorNeutralStroke2);
+}
+
+.header-row {
+    width: 100%;
+    padding: 0.6rem 1.25rem;
+}
+
+.footer-status {
+    padding: 0.5rem 1.25rem;
+    margin: 0;
 }
 
 .muted-text {
