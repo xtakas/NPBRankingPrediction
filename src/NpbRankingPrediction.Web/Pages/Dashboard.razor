@@ -3,7 +3,7 @@
 @inject SeasonDataService SeasonData
 @inject ThemeState ThemeState
 
-<PageTitle>NPB順位予想 的中トラッカー</PageTitle>
+<PageTitle>プロ野球順位予想</PageTitle>
 
 @* FluentUI v5の<FluentLayout>はヘッダー/フッターの高さが固定(overflow:hidden)で、
    タイトルが折り返す/長くなるとすぐ中身が切れてしまい、このアプリの可変長タイトル+
@@ -11,7 +11,7 @@
    同じ「ヘッダー・フッターを常に見せる」目的を安全に達成できるためこちらを採用する。 *@
 <header class="app-header">
     <FluentStack Orientation="Microsoft.FluentUI.AspNetCore.Components.Orientation.Horizontal" HorizontalAlignment="HorizontalAlignment.SpaceBetween" VerticalAlignment="VerticalAlignment.Center" Wrap="true" Class="header-row">
-        <h1>NPB順位予想 的中トラッカー</h1>
+        <h1>プロ野球順位予想</h1>
         <FluentStack Orientation="Microsoft.FluentUI.AspNetCore.Components.Orientation.Horizontal" HorizontalGap="8" VerticalAlignment="VerticalAlignment.Center" Wrap="true">
             @if (seasons.Count > 1)
             {
