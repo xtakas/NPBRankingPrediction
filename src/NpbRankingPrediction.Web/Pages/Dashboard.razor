@@ -2,6 +2,7 @@
 @implements IDisposable
 @inject SeasonDataService SeasonData
 @inject ThemeState ThemeState
+@inject IJSRuntime JS
 
 <PageTitle>プロ野球順位予想</PageTitle>
 
@@ -61,10 +62,15 @@
                         ✓ @(selectedSeason)年シーズン 最終順位確定(@LatestDate?.ToString("yyyy年M月d日"))
                     </FluentMessageBar>
                 }
-                else if (IsScrapeStale)
+                else if (IsScrapeStale && !IsStaleWarningDismissed)
                 {
                     <FluentMessageBar Intent="MessageBarIntent.Warning" AllowDismiss="false" Class="mb-3">
-                        ⚠ 順位データの自動更新が @StaleHoursText 時間以上止まっている可能性があります(自宅サーバーのcronをご確認ください)。
+                        <ChildContent>
+                            ⚠ 順位データの自動更新が @StaleHoursText 時間以上止まっている可能性があります(自宅サーバーのcronをご確認ください)。
+                        </ChildContent>
+                        <ActionsTemplate>
+                            <FluentButton Appearance="ButtonAppearance.Subtle" OnClick="DismissStaleWarningAsync">閉じる</FluentButton>
+                        </ActionsTemplate>
                     </FluentMessageBar>
                 }
 
@@ -284,6 +290,17 @@
 
     private int StaleHoursText => StaleThresholdHours;
 
+    // 「閉じる」を押した時点のlastScrapedAtUtcをシーズンごとにlocalStorageへ保存しておき、
+    // 同じ停止状態の間は再読み込みしても警告を再表示しない。cronが復旧して新しい
+    // lastScrapedAtUtcに変わった後、再び止まって新しい停止状態になったときだけ改めて
+    // 表示する(一度閉じたら以降ずっと出なくなる、という事故を防ぐため)。
+    private DateTimeOffset? dismissedStaleTimestamp;
+
+    private bool IsStaleWarningDismissed
+        => dismissedStaleTimestamp is not null && dismissedStaleTimestamp == LastScrapedAtUtc;
+
+    private string StaleDismissStorageKey => $"npb-stale-dismissed-{selectedSeason}";
+
     private DateOnly? LatestDate => standings?.Snapshots.Count > 0 ? standings.Snapshots[^1].Date : null;
 
     // null = 最新を表示。過去日を選んでいる間は「最終更新日」とは別に、その日時点のスナップショットを表示する。
@@ -424,8 +441,24 @@
         predictorNames = await SeasonData.LoadPredictorNamesAsync(selectedSeason);
 
         BuildChartOptions();
+        await LoadStaleDismissalAsync();
 
         isLoading = false;
+    }
+
+    private async Task LoadStaleDismissalAsync()
+    {
+        var stored = await JS.InvokeAsync<string?>("localStorage.getItem", StaleDismissStorageKey);
+        dismissedStaleTimestamp = DateTimeOffset.TryParse(stored, out var parsed) ? parsed : null;
+    }
+
+    private async Task DismissStaleWarningAsync()
+    {
+        dismissedStaleTimestamp = LastScrapedAtUtc;
+        if (LastScrapedAtUtc is { } timestamp)
+        {
+            await JS.InvokeVoidAsync("localStorage.setItem", StaleDismissStorageKey, timestamp.ToString("O"));
+        }
     }
 
     private void SelectTab(string tab)
