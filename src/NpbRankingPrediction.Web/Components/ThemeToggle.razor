@@ -17,14 +17,16 @@
 @code {
     private const string StorageKey = "npb-theme-mode";
 
+    // 「自動」ボタンは廃止したが、ユーザーが一度もライト/ダークを明示選択していない間は
+    // 引き続きOS設定に追従させたい。そのため未選択時はSetThemeAsyncを呼ばずFluentUI側の
+    // 既定(システム追従)のままにし、このトグルの押下表示だけ現在の解決結果に合わせる。
     private static readonly (ThemeMode Mode, string Label)[] Options =
     [
-        (ThemeMode.System, "自動"),
         (ThemeMode.Light, "ライト"),
         (ThemeMode.Dark, "ダーク"),
     ];
 
-    private ThemeMode selectedMode = ThemeMode.System;
+    private ThemeMode selectedMode = ThemeMode.Light;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -33,18 +35,16 @@
             return;
         }
 
-        // IThemeServiceには「現在選択中のモード」を読み戻すAPIが無いため、トグルUI自体の見た目(押下状態)は
-        // このコンポーネント独自のlocalStorageキーで復元する。実際のライト/ダーク適用自体はFluentUI側が
-        // 起動時に自前のストレージから復元済みなので、ここでSetThemeAsyncを呼び直す必要はない。
         var stored = await JS.InvokeAsync<string?>("localStorage.getItem", StorageKey);
+        var isDark = await ThemeService.IsDarkModeAsync();
         selectedMode = stored switch
         {
             "light" => ThemeMode.Light,
             "dark" => ThemeMode.Dark,
-            _ => ThemeMode.System,
+            _ => isDark ? ThemeMode.Dark : ThemeMode.Light,
         };
 
-        ThemeState.SetDark(await ThemeService.IsDarkModeAsync());
+        ThemeState.SetDark(isDark);
         StateHasChanged();
     }
 
@@ -53,12 +53,7 @@
         selectedMode = mode;
         await ThemeService.SetThemeAsync(mode);
 
-        var value = mode switch
-        {
-            ThemeMode.Light => "light",
-            ThemeMode.Dark => "dark",
-            _ => "system",
-        };
+        var value = mode == ThemeMode.Dark ? "dark" : "light";
         await JS.InvokeVoidAsync("localStorage.setItem", StorageKey, value);
 
         ThemeState.SetDark(await ThemeService.IsDarkModeAsync());

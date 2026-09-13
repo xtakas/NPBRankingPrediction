@@ -22,6 +22,20 @@
                               @bind-Value="selectedSeasonValue"
                               @bind-Value:after="OnSeasonValueChanged" />
             }
+            @if (HasData)
+            {
+                <div class="date-view-picker">
+                    <label for="viewDateInput">順位・的中を表示する日:</label>
+                    <input id="viewDateInput" type="date" class="date-view-picker-input"
+                           value="@((selectedViewDate ?? LatestDate)?.ToString("yyyy-MM-dd"))"
+                           min="@MinDateText" max="@MaxDateText"
+                           @onchange="OnViewDateChanged" />
+                    @if (IsViewingPastDate)
+                    {
+                        <FluentButton Appearance="ButtonAppearance.Outline" OnClick="ResetToLatest">最新に戻す</FluentButton>
+                    }
+                </div>
+            }
             <ThemeToggle />
         </FluentStack>
     </FluentStack>
@@ -53,18 +67,6 @@
                         ⚠ 順位データの自動更新が @StaleHoursText 時間以上止まっている可能性があります(自宅サーバーのcronをご確認ください)。
                     </FluentMessageBar>
                 }
-
-                <div class="date-view-picker mb-3">
-                    <label for="viewDateInput">順位・的中を表示する日:</label>
-                    <input id="viewDateInput" type="date" class="date-view-picker-input"
-                           value="@((selectedViewDate ?? LatestDate)?.ToString("yyyy-MM-dd"))"
-                           min="@MinDateText" max="@MaxDateText"
-                           @onchange="OnViewDateChanged" />
-                    @if (IsViewingPastDate)
-                    {
-                        <FluentButton Appearance="ButtonAppearance.Outline" OnClick="ResetToLatest">最新に戻す</FluentButton>
-                    }
-                </div>
 
                 @if (IsViewingPastDate)
                 {
