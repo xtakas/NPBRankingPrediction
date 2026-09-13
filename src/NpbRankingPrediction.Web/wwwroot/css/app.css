@@ -34,14 +34,12 @@ body[data-theme="dark"] {
    一切含まないため、日本語文字の描画をまるごとOS標準のフォールバック機構に委ねてしまっている。
    端末・ブラウザによってフォールバック先のフォントが異なり、濁点付き文字の字形が欠けるなど
    表示が不安定になる実例があったため、確実な日本語Webフォントを明示的に指定して固定する。
-   default-fuib.cssのbody{font-family:var(--fontFamilyBase)}は実行時に動的注入され特異度も
-   同じため、html body と要素を1つ足して確実に上書きする。 */
-/* FluentのWeb Components(fluent-tab等)は各要素が自前でfont-family:var(--fontFamilyBase)を
-   持っており、bodyへの指定を継承させるだけでは上書きできない。全称セレクタ+!importantで
-   確実に効かせる(下の.leaderboard-panelのような意図的な独自フォント指定は、そちら側にも
-   !importantを付けて優先させている)。 */
-* {
-    font-family: "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+   FluentのWeb Components(fluent-tab等)を含め全要素がこの変数をfont-familyに使っているため、
+   個々の要素のfont-familyを全称セレクタで上書きするのではなく、参照元の変数そのものを
+   上書きする方が的確(将来<code>等が独自にfont-familyを指定してもここでは干渉しない)。
+   Fluent側の:root定義と特異度が同じため、読み込み順で負けないよう!importantを付けている。 */
+:root {
+    --fontFamilyBase: "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
 }
 
 h1:focus {
@@ -71,9 +69,10 @@ body {
     overflow: visible !important;
 }
 
-.content {
-    padding-top: 1.1rem;
-}
+/* .content(MainLayoutの<article>)はheader/main/footerをまとめて包む。ヘッダーが
+   position:stickyでビューポート上端に張り付くため、ここにpadding-topを入れると
+   スクロール前だけ隙間が空きスクロールすると閉じる、という見た目のガタつきが出る。
+   本文側の余白は.page-shell自身のpaddingで持たせている。 */
 
 .valid.modified:not([type=checkbox]) {
     outline: 1px solid #26b050;
@@ -165,6 +164,14 @@ code {
 
 .view-panels {
     padding-bottom: 0.25rem;
+}
+
+/* Leaderboard.razor.css(scoped CSS)ではなくここに置く理由: .leaderboard-panelは
+   <FluentCard Class="leaderboard-panel"> という子コンポーネントに付けたクラスで、
+   BlazorのCSS分離スコープ属性(b-xxxx)はFluentCardの描画先divまでは伝播しないため、
+   Leaderboard.razor.css側にこのルールを書いても効かない(実際に検証して確認済み)。 */
+.leaderboard-panel {
+    margin-bottom: 1.5rem;
 }
 
 /* ヘッダー・フッターは高さを固定せず(中身に応じて伸縮)、position:stickyで画面の上下に

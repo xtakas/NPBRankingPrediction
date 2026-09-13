@@ -22,7 +22,7 @@
                               @bind-Value="selectedSeasonValue"
                               @bind-Value:after="OnSeasonValueChanged" />
             }
-            @if (HasData)
+            @if (!isLoading && HasData)
             {
                 <div class="date-view-picker">
                     <label for="viewDateInput">順位・的中を表示する日:</label>
@@ -115,8 +115,9 @@
                 </div>
 
                 @* セ・パの予想表を横に並べると上の順位表の高さの違いで行がズレるため、
-                   デスクトップでは1つにまとめた表を使う。FluentDataGridの見出しがセ・パ2段
-                   構成と相性が悪いため、この結合表だけは素の<table>のままにしている。 *@
+                   デスクトップでは1つにまとめた表を使う。この結合表はセ・パ2段見出しの構成が
+                   FluentDataGridと相性が悪く、素の<table>のまま(AnswerTable/PredictionComparisonTable
+                   も同じ理由でFluentDataGridから素のtableへ戻している)。 *@
                 <div class="prediction-table-desktop-only">
                     <FluentCard>
                         <CombinedPredictionComparisonTable CentralEntries="CentralEntries" PacificEntries="PacificEntries" Predictions="predictions!.Predictors" Names="predictorNames" Scores="DisplayedPredictorScores" IsSeasonFinal="EffectiveSeasonFinalForDisplay" />
@@ -171,7 +172,7 @@
 </main>
 
 
-@if (HasData && !IsSelectedSeasonFinal)
+@if (!isLoading && HasData && !IsSelectedSeasonFinal)
 {
     <footer class="app-footer">
         <p class="muted-text footer-status">
@@ -185,9 +186,10 @@
 }
 
 @code {
-    // 縦スクロールを避けるため、リーダーボード/予想比較/グラフをタブで切り替える(常に1つだけDOMに
-    // 存在させ、各タブの中身だけ .view-panels 内で独立してスクロールする)。FluentTabsは見出し
-    // (ヘッダー)だけに使い、中身はselectedLeagueTabと同じ「文字列IDで@ifして出し分ける」パターンにする。
+    // リーダーボード/予想比較/グラフをタブで切り替える(常に1つだけDOMに存在させる)。
+    // FluentTabsは見出し(ヘッダー)だけに使い、中身はselectedLeagueTabと同じ
+    // 「文字列IDで@ifして出し分ける」パターンにする。ページ自体はheader/footerが
+    // position:stickyの通常スクロールで、.view-panels自体はもう独立スクロールしない。
     private string activeViewTabId = "leaderboard";
 
     private static readonly Dictionary<string, string> Tabs = new()
