@@ -1,26 +1,26 @@
-@* リーダーボード: 的中数トップNを暖色・カード型で表示(デザイン案③の方向性) *@
-<div class="leaderboard-panel">
+@* リーダーボード: 的中数トップNをFluent UIの標準コンポーネント(FluentCard/FluentAvatar/FluentProgressBar)
+   だけで組んだ一覧。暖色カード型の独自デザインから、Fluentのトークン・部品に統一した見た目に変更。 *@
+<FluentCard Class="leaderboard-panel">
     <div class="leaderboard-title">@Title</div>
-    <div class="leaderboard-cards">
+    <div class="leaderboard-rows">
         @foreach (var row in Rows)
         {
-            <div class="leaderboard-card @(row.IsLeader && IsSeasonFinal ? "leaderboard-card--leader" : "")">
-                <div class="leaderboard-avatar @(row.IsLeader && IsSeasonFinal ? "leaderboard-avatar--leader" : "")">@row.Score.PredictorId</div>
+            var isLeader = row.IsLeader && IsSeasonFinal;
+            <div class="leaderboard-row @(isLeader ? "leaderboard-row--leader" : "")">
+                <FluentAvatar Initials="@row.Score.PredictorId" Size="AvatarSize.Size32" Color="@(isLeader ? AvatarColor.Gold : AvatarColor.Neutral)" />
                 <div class="leaderboard-body">
                     <div class="leaderboard-row-top">
                         <span class="leaderboard-name">@NameFor(row.Score.PredictorId)</span>
                         <span class="leaderboard-count @(row.Score.IsCarryoverClear ? "leaderboard-count--clear" : "")">
-                            @row.Score.TotalMatches / 12@(row.Score.IsCarryoverClear && IsSeasonFinal ? " 的中！" : "")
+                            @row.Score.TotalMatches / 12@(row.Score.IsCarryoverClear && IsSeasonFinal ? " 的中!" : "")
                         </span>
                     </div>
-                    <div class="leaderboard-bar-track">
-                        <div class="leaderboard-bar-fill" style="width:@(BarWidthPercent(row.Score.TotalMatches))%;"></div>
-                        <div class="leaderboard-bar-tick"></div>
-                    </div>
+                    <FluentProgressBar Min="0" Max="12" Value="@row.Score.TotalMatches"
+                                        State="@(row.Score.IsCarryoverClear ? ProgressState.Success : null)" />
                 </div>
-                @if (row.IsLeader && IsSeasonFinal)
+                @if (isLeader)
                 {
-                    <svg class="leaderboard-trophy" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                    <svg class="leaderboard-trophy" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                         <path d="M7 4h10v3a5 5 0 0 1-10 0V4z" />
                         <path d="M7 5H4a2 2 0 0 0 2 4M17 5h3a2 2 0 0 1-2 4" />
                         <path d="M12 12v4M9 19h6M10 16h4v3h-4z" />
@@ -33,7 +33,7 @@
     {
         <div class="leaderboard-more">他 @HiddenCount 名</div>
     }
-</div>
+</FluentCard>
 
 @code {
     [Parameter, EditorRequired]
@@ -90,8 +90,6 @@
         Rows = shown.Select(r => new Row(r.Score, maxScore > 0 && r.Score.TotalMatches == maxScore)).ToList();
         HiddenCount = ranked.Count - shown.Count;
     }
-
-    private static int BarWidthPercent(int totalMatches) => (int)Math.Round(totalMatches / 12.0 * 100);
 
     private string NameFor(string predictorId)
         => Names.TryGetValue(predictorId, out var name) ? name : "";

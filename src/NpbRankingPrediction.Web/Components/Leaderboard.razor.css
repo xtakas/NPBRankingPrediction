@@ -1,97 +1,36 @@
 .leaderboard-panel {
-    /* このコンポーネントだけ暖色カード型の独自デザイン(app.cssのFluentトークンとは別系統)なので、
-       ライト/ダークの色もここに閉じたカスタムプロパティとして持つ。切り替えのフックは
-       app.cssのTheme連動と同じ body[data-theme="dark"] を使う。 */
-    --lb-panel-bg: #fff8ef;
-    --lb-title-color: #4a3b30;
-    --lb-card-bg: #fff;
-    --lb-card-shadow: rgba(74, 59, 48, 0.06);
-    --lb-card-leader-shadow: rgba(74, 59, 48, 0.1);
-    --lb-leader-border: #ffd166;
-    --lb-avatar-bg: #f3ead9;
-    --lb-avatar-color: #a3907d;
-    --lb-avatar-leader-bg: #ffd166;
-    --lb-avatar-leader-color: #4a3b30;
-    --lb-name-color: #4a3b30;
-    --lb-count-color: #a3907d;
-    --lb-count-clear-color: #ff6b4a;
-    --lb-bar-track-bg: #f3ead9;
-    --lb-bar-tick-bg: #4a3b30;
-    --lb-trophy-color: #ff6b4a;
-
-    /* app.cssの全称セレクタ(日本語Webフォント指定, !important)に上書きされないよう、
-       このコンポーネント独自の見た目を守るためこちらにも!importantを付ける。 */
-    font-family: 'Zen Maru Gothic', 'Zen Kaku Gothic New', 'Noto Sans JP', sans-serif !important;
-    background: var(--lb-panel-bg);
-    border-radius: 20px;
-    padding: 20px 22px;
     margin-bottom: 1.5rem;
 }
 
-body[data-theme="dark"] .leaderboard-panel {
-    --lb-panel-bg: #2a2119;
-    --lb-title-color: #f3ead9;
-    --lb-card-bg: #3a2f24;
-    --lb-card-shadow: rgba(0, 0, 0, 0.35);
-    --lb-card-leader-shadow: rgba(0, 0, 0, 0.45);
-    --lb-leader-border: #ffd166;
-    --lb-avatar-bg: #4a3b30;
-    --lb-avatar-color: #e8d9c5;
-    --lb-avatar-leader-bg: #ffd166;
-    --lb-avatar-leader-color: #2a2119;
-    --lb-name-color: #f3ead9;
-    --lb-count-color: #cbb79e;
-    --lb-count-clear-color: #ff8a63;
-    --lb-bar-track-bg: #4a3b30;
-    --lb-bar-tick-bg: #f3ead9;
-    --lb-trophy-color: #ff8a63;
-}
-
 .leaderboard-title {
-    font-weight: 900;
+    font-weight: 700;
     font-size: 1rem;
-    color: var(--lb-title-color);
-    margin-bottom: 14px;
+    color: var(--colorNeutralForeground1);
+    margin-bottom: 10px;
 }
 
-.leaderboard-cards {
+.leaderboard-rows {
     display: flex;
     flex-direction: column;
-    gap: 10px;
 }
 
-.leaderboard-card {
+.leaderboard-row {
     display: flex;
     align-items: center;
-    gap: 14px;
-    background: var(--lb-card-bg);
-    border-radius: 16px;
-    padding: 12px 16px;
-    box-shadow: 0 3px 10px var(--lb-card-shadow);
+    gap: 12px;
+    padding: 10px 4px;
+    border-bottom: 1px solid var(--colorNeutralStroke2);
 }
 
-.leaderboard-card--leader {
-    border: 2px solid var(--lb-leader-border);
-    box-shadow: 0 4px 14px var(--lb-card-leader-shadow);
+.leaderboard-row:last-child {
+    border-bottom: none;
 }
 
-.leaderboard-avatar {
-    width: 42px;
-    height: 42px;
-    border-radius: 50%;
-    background: var(--lb-avatar-bg);
-    color: var(--lb-avatar-color);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 900;
-    font-size: 0.8rem;
-    flex-shrink: 0;
-}
-
-.leaderboard-avatar--leader {
-    background: var(--lb-avatar-leader-bg);
-    color: var(--lb-avatar-leader-color);
+.leaderboard-row--leader {
+    background: var(--colorNeutralBackground2);
+    border-radius: 8px;
+    padding-left: 10px;
+    padding-right: 10px;
 }
 
 .leaderboard-body {
@@ -104,58 +43,35 @@ body[data-theme="dark"] .leaderboard-panel {
     flex-wrap: wrap;
     justify-content: space-between;
     align-items: baseline;
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     margin-bottom: 6px;
     gap: 4px 10px;
 }
 
 .leaderboard-name {
-    font-weight: 700;
-    color: var(--lb-name-color);
+    font-weight: 600;
+    color: var(--colorNeutralForeground1);
 }
 
 .leaderboard-count {
-    color: var(--lb-count-color);
+    color: var(--colorNeutralForeground3);
     white-space: nowrap;
+    font-variant-numeric: tabular-nums;
 }
 
 .leaderboard-count--clear {
-    color: var(--lb-count-clear-color);
+    color: var(--colorPaletteGreenForeground1, #0f7b0f);
     font-weight: 700;
 }
 
-.leaderboard-bar-track {
-    height: 10px;
-    border-radius: 999px;
-    background: var(--lb-bar-track-bg);
-    position: relative;
-    overflow: hidden;
-}
-
-.leaderboard-bar-fill {
-    height: 100%;
-    border-radius: 999px;
-    background: linear-gradient(90deg, #ffd166, #ff6b4a);
-}
-
-.leaderboard-bar-tick {
-    position: absolute;
-    left: 50%;
-    top: -3px;
-    width: 2px;
-    height: 16px;
-    background: var(--lb-bar-tick-bg);
-    opacity: 0.45;
-}
-
 .leaderboard-trophy {
-    color: var(--lb-trophy-color);
+    color: var(--colorPaletteMarigoldForeground1, #b89500);
     flex-shrink: 0;
 }
 
 .leaderboard-more {
     margin-top: 10px;
     font-size: 0.75rem;
-    color: var(--lb-count-color);
+    color: var(--colorNeutralForeground3);
     text-align: center;
 }
