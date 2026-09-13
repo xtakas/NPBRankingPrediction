@@ -30,15 +30,34 @@ body[data-theme="dark"] {
     --hit-confirmed-border: #e0b23c;
 }
 
+/* Fluentの既定フォントスタック(--fontFamilyBase)は "Segoe UI" 等の欧文フォントのみで日本語を
+   一切含まないため、日本語文字の描画をまるごとOS標準のフォールバック機構に委ねてしまっている。
+   端末・ブラウザによってフォールバック先のフォントが異なり、濁点付き文字の字形が欠けるなど
+   表示が不安定になる実例があったため、確実な日本語Webフォントを明示的に指定して固定する。
+   FluentのWeb Components(fluent-tab等)を含め全要素がこの変数をfont-familyに使っているため、
+   個々の要素のfont-familyを全称セレクタで上書きするのではなく、参照元の変数そのものを
+   上書きする方が的確(将来<code>等が独自にfont-familyを指定してもここでは干渉しない)。
+   Fluent側の:root定義と特異度が同じため、読み込み順で負けないよう!importantを付けている。 */
+:root {
+    --fontFamilyBase: "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+}
+
 h1:focus {
     outline: none;
 }
 
-/* 縦スクロールを避けるレイアウト(.view-panelsが確保できる高さを増やすため)、
-   狭い画面ではタイトルの折り返しで無駄にヘッダーの高さを取らないよう縮小する。 */
+/* ヘッダーは中身に合わせて伸びる(固定高さ・overflow:hiddenではない)ため折り返しても内容が
+   切れる心配はないが、既定のh1サイズ(Fluentの--fontSizeHero900、40px相当)だと狭い画面で
+   無駄に高さを取るため縮小する。default-fuib.cssのh1{font-size:...}は実行時に動的注入され
+   同一特異度だと読み込み順で負けるため、.header-row h1 とクラスを1段足して確実に上書きする。 */
+.header-row h1 {
+    font-size: 1.5rem;
+    margin: 0;
+}
+
 @media (max-width: 480px) {
-    .page-shell h1 {
-        font-size: 1.3rem;
+    .header-row h1 {
+        font-size: 1.2rem;
     }
 }
 
@@ -50,9 +69,10 @@ body {
     overflow: visible !important;
 }
 
-.content {
-    padding-top: 1.1rem;
-}
+/* .content(MainLayoutの<article>)はheader/main/footerをまとめて包む。ヘッダーが
+   position:stickyでビューポート上端に張り付くため、ここにpadding-topを入れると
+   スクロール前だけ隙間が空きスクロールすると閉じる、という見た目のガタつきが出る。
+   本文側の余白は.page-shell自身のpaddingで持たせている。 */
 
 .valid.modified:not([type=checkbox]) {
     outline: 1px solid #26b050;
@@ -140,47 +160,46 @@ code {
     max-width: 1120px;
     margin: 0 auto;
     padding: 1.25rem 1.25rem 3rem;
-    display: flex;
-    flex-direction: column;
-    /* ビューポート内に収め、タブ切り替え時に中身(.view-panels)だけを独立してスクロールさせる。
-       ヘッダー側のメッセージバー等が異常に長くなり .view-panels の最低確保分(min-height)すら
-       収まらない場合は、bodyのoverflow:visible上書き(下記)により素のページスクロールへ
-       フォールバックする(overflow:hiddenにはしないので内容が見えなくなることはない)。 */
-    height: calc(100dvh - 1.1rem);
-}
-
-/* 順位表/予想比較/グラフの切り替えタブ。縦スクロールを避けるため、内容はこのタブで
-   区切ってから .view-panels 側で個別にスクロールさせる(全部を1画面に収めるのではなく、
-   タブ単位で画面に収まる量に減らすアプローチ)。 */
-.view-tabs {
-    display: flex;
-    gap: 4px;
-    border-bottom: 1px solid var(--colorNeutralStroke2);
-    margin-bottom: 1rem;
-}
-
-.view-tabs button {
-    font: inherit;
-    font-weight: 700;
-    font-size: 0.9rem;
-    padding: 0.6rem 1rem 0.5rem;
-    background: transparent;
-    border: none;
-    border-bottom: 3px solid transparent;
-    color: var(--colorNeutralForeground2);
-    cursor: pointer;
-}
-
-.view-tabs button[aria-selected="true"] {
-    color: var(--colorBrandForeground1, #1a8a44);
-    border-bottom-color: var(--colorBrandForeground1, #1a8a44);
 }
 
 .view-panels {
-    flex: 1;
-    min-height: 300px;
-    overflow-y: auto;
     padding-bottom: 0.25rem;
+}
+
+/* Leaderboard.razor.css(scoped CSS)ではなくここに置く理由: .leaderboard-panelは
+   <FluentCard Class="leaderboard-panel"> という子コンポーネントに付けたクラスで、
+   BlazorのCSS分離スコープ属性(b-xxxx)はFluentCardの描画先divまでは伝播しないため、
+   Leaderboard.razor.css側にこのルールを書いても効かない(実際に検証して確認済み)。 */
+.leaderboard-panel {
+    margin-bottom: 1.5rem;
+}
+
+/* ヘッダー・フッターは高さを固定せず(中身に応じて伸縮)、position:stickyで画面の上下に
+   貼り付ける。ページ自体は通常通り縦スクロールし、ヘッダー・フッターだけが常に見え続ける。 */
+.app-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background-color: var(--colorNeutralBackground1);
+    border-bottom: 1px solid var(--colorNeutralStroke2);
+}
+
+.app-footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    background-color: var(--colorNeutralBackground1);
+    border-top: 1px solid var(--colorNeutralStroke2);
+}
+
+.header-row {
+    width: 100%;
+    padding: 0.6rem 1.25rem;
+}
+
+.footer-status {
+    padding: 0.5rem 1.25rem;
+    margin: 0;
 }
 
 .muted-text {
@@ -326,11 +345,12 @@ code {
 .standings-table th {
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .standings-table th:nth-child(1),
 .standings-table td:nth-child(1) {
-    width: 2.5rem;
+    width: 2.8rem;
 }
 
 .standings-table th:nth-child(3),
@@ -344,7 +364,7 @@ code {
 
 .standings-table th:nth-child(6),
 .standings-table td:nth-child(6) {
-    width: 3.5rem;
+    width: 3.2rem;
 }
 
 .comparison-table {

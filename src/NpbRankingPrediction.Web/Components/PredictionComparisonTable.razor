@@ -2,6 +2,11 @@
     予想者を行、順位(1位〜6位)を列にした転置表。
     予想者数が多くても横幅が「順位6列+的中列」で一定になり、スマホでも横スクロールなしで
     各予想者の的中状況を縦にたどって見られる。
+
+    FluentDataGridはCSS Gridでレイアウトするため、Widthの合計をどれだけ切り詰めても
+    列幅指定では吸収できない十数px単位のオーバーヘッドが残り、狭い画面のFluentCard内では
+    横スクロールが避けられなかった。素の<table>(table-layout:fixed)の方が幅を正確に
+    制御できるため、見た目はFluentトークンに揃えたままこちらに戻す。
 *@
 <div class="table-scroll">
     <table class="fluent-table comparison-table @(League == League.Central ? "prediction-table--central" : "prediction-table--pacific")">

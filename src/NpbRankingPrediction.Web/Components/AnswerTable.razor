@@ -1,3 +1,7 @@
+@* FluentDataGridはCSS Gridでレイアウトするため、Widthの合計をどれだけ切り詰めても
+   列幅指定では吸収できない十数px単位のオーバーヘッドが残り、狭い画面のFluentCard内では
+   横スクロールが避けられなかった。素の<table>(table-layout:fixed)の方が幅を正確に
+   制御できるため、見た目はFluentトークンに揃えたままこちらに戻す。 *@
 <div class="table-scroll">
     <table class="fluent-table standings-table">
         <thead>
@@ -7,7 +11,7 @@
                 <th class="text-center">勝</th>
                 <th class="text-center">敗</th>
                 <th class="text-center">分</th>
-                <th class="text-center">ゲーム差</th>
+                <th class="text-center">差</th>
             </tr>
         </thead>
         <tbody>
