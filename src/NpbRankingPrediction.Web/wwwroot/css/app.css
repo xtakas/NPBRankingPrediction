@@ -293,17 +293,6 @@ code {
     text-align: left;
 }
 
-/* FluentDataGridのTemplateColumnは<td>自体にセル単位のクラスを付けられないため、
-   セル内容をこの<span>で包んで的中ハイライトの見た目(cell-hit/cell-hit-confirmed)を再現する。 */
-.grid-cell-highlight {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 1.6rem;
-    padding: 2px 6px;
-    border-radius: 4px;
-}
-
 .cell-hit {
     background: var(--hit-bg);
     box-shadow: inset 0 0 0 2px var(--hit-border);
@@ -341,35 +330,6 @@ code {
     white-space: nowrap;
 }
 
-/* FluentDataGridはCSS Gridでセル幅を組むため、Widthで指定した列幅より内容(長いチーム名など)が
-   大きいとグリッドトラック自体が広がってしまう(CSS Gridのmin-width:autoの既定挙動)。
-   min-width:0で明示的に上書きし、Widthどおりに収まるようにする。 */
-table.fluent-data-grid td,
-table.fluent-data-grid th {
-    min-width: 0;
-}
-
-/* FluentDataGridの既定セルpadding(左右18px、bundle.scp.cssに直書き)は、順位表・予想比較表のような
-   多列で1列ごとの幅が狭いグリッドだと数字1〜2文字ですら省略記号で切れてしまうほど大きい。
-   このアプリの2つの密なグリッドだけ、詰めたpaddingで上書きする(特異度をFluent既定より高くするため
-   table.fluent-data-grid.<独自クラス> td の形にしている)。 */
-table.fluent-data-grid.standings-grid td:not([col-select="true"]),
-table.fluent-data-grid.comparison-grid td:not([col-select="true"]) {
-    padding: 0 4px;
-}
-
-.standings-grid-team {
-    overflow: hidden;
-}
-
-.standings-grid-team .team-fullname {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    display: inline-block;
-    max-width: calc(100% - 1.9rem);
-    vertical-align: middle;
-}
-
 .standings-table {
     table-layout: fixed;
 }
@@ -378,11 +338,12 @@ table.fluent-data-grid.comparison-grid td:not([col-select="true"]) {
 .standings-table th {
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .standings-table th:nth-child(1),
 .standings-table td:nth-child(1) {
-    width: 2.5rem;
+    width: 2.8rem;
 }
 
 .standings-table th:nth-child(3),
@@ -396,7 +357,7 @@ table.fluent-data-grid.comparison-grid td:not([col-select="true"]) {
 
 .standings-table th:nth-child(6),
 .standings-table td:nth-child(6) {
-    width: 3.5rem;
+    width: 3.2rem;
 }
 
 .comparison-table {
