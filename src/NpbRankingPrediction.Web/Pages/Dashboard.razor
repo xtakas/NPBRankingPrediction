@@ -25,7 +25,7 @@
             @if (!isLoading && HasData)
             {
                 <div class="date-view-picker">
-                    <label for="viewDateInput">順位・的中を表示する日:</label>
+                    <label for="viewDateInput" title="順位・的中を表示する日">表示日:</label>
                     <input id="viewDateInput" type="date" class="date-view-picker-input"
                            value="@((selectedViewDate ?? LatestDate)?.ToString("yyyy-MM-dd"))"
                            min="@MinDateText" max="@MaxDateText"
@@ -84,88 +84,88 @@
                 <div class="view-panels">
                     @if (activeViewTabId == "leaderboard")
                     {
-                <Leaderboard Scores="DisplayedPredictorScores" Names="predictorNames" TopCount="appConfig?.LeaderboardTopCount"
-                             IsSeasonFinal="EffectiveSeasonFinalForDisplay"
-                             Title="@(EffectiveSeasonFinalForDisplay ? "最終リーダーボード(セ・パ合計)" : "リーダーボード(セ・パ合計)")" />
-            }
-            else if (activeViewTabId == "compare")
-            {
-                <div class="league-tabs-mobile-only">
-                    <FluentTabs @bind-ActiveTabId="selectedLeagueTab" Class="mb-3">
-                        <FluentTab Id="central" Header="セ・リーグ" />
-                        <FluentTab Id="pacific" Header="パ・リーグ" />
-                    </FluentTabs>
-                </div>
-
-                <div class="league-columns">
-                    <FluentCard Class="@($"league-section {(selectedLeagueTab == "central" ? "active" : "")}")">
-                        <div class="section-title section-title--central mt-0">セ・リーグ</div>
-                        <AnswerTable Entries="CentralEntries" />
-                        <div class="prediction-table-mobile-only">
-                            <PredictionComparisonTable Entries="CentralEntries" Predictions="predictions!.Predictors" Names="predictorNames" Scores="DisplayedPredictorScores" League="League.Central" IsSeasonFinal="EffectiveSeasonFinalForDisplay" />
+                        <Leaderboard Scores="DisplayedPredictorScores" Names="predictorNames" TopCount="appConfig?.LeaderboardTopCount"
+                                     IsSeasonFinal="EffectiveSeasonFinalForDisplay"
+                                     Title="@(EffectiveSeasonFinalForDisplay ? "最終リーダーボード(セ・パ合計)" : "リーダーボード(セ・パ合計)")" />
+                    }
+                    else if (activeViewTabId == "compare")
+                    {
+                        <div class="league-tabs-mobile-only">
+                            <FluentTabs @bind-ActiveTabId="selectedLeagueTab" Class="mb-3">
+                                <FluentTab Id="central" Header="セ・リーグ" />
+                                <FluentTab Id="pacific" Header="パ・リーグ" />
+                            </FluentTabs>
                         </div>
-                    </FluentCard>
-                    <FluentCard Class="@($"league-section {(selectedLeagueTab == "pacific" ? "active" : "")}")">
-                        <div class="section-title section-title--pacific mt-0">パ・リーグ</div>
-                        <AnswerTable Entries="PacificEntries" />
-                        <div class="prediction-table-mobile-only">
-                            <PredictionComparisonTable Entries="PacificEntries" Predictions="predictions!.Predictors" Names="predictorNames" Scores="DisplayedPredictorScores" League="League.Pacific" IsSeasonFinal="EffectiveSeasonFinalForDisplay" />
+
+                        <div class="league-columns">
+                            <FluentCard Class="@($"league-section {(selectedLeagueTab == "central" ? "active" : "")}")">
+                                <div class="section-title section-title--central mt-0">セ・リーグ</div>
+                                <AnswerTable Entries="CentralEntries" />
+                                <div class="prediction-table-mobile-only">
+                                    <PredictionComparisonTable Entries="CentralEntries" Predictions="predictions.Predictors" Names="predictorNames" Scores="DisplayedPredictorScores" League="League.Central" IsSeasonFinal="EffectiveSeasonFinalForDisplay" />
+                                </div>
+                            </FluentCard>
+                            <FluentCard Class="@($"league-section {(selectedLeagueTab == "pacific" ? "active" : "")}")">
+                                <div class="section-title section-title--pacific mt-0">パ・リーグ</div>
+                                <AnswerTable Entries="PacificEntries" />
+                                <div class="prediction-table-mobile-only">
+                                    <PredictionComparisonTable Entries="PacificEntries" Predictions="predictions.Predictors" Names="predictorNames" Scores="DisplayedPredictorScores" League="League.Pacific" IsSeasonFinal="EffectiveSeasonFinalForDisplay" />
+                                </div>
+                            </FluentCard>
                         </div>
-                    </FluentCard>
-                </div>
 
-                @* セ・パの予想表を横に並べると上の順位表の高さの違いで行がズレるため、
-                   デスクトップでは1つにまとめた表を使う。この結合表はセ・パ2段見出しの構成が
-                   FluentDataGridと相性が悪く、素の<table>のまま(AnswerTable/PredictionComparisonTable
-                   も同じ理由でFluentDataGridから素のtableへ戻している)。 *@
-                <div class="prediction-table-desktop-only">
-                    <FluentCard>
-                        <CombinedPredictionComparisonTable CentralEntries="CentralEntries" PacificEntries="PacificEntries" Predictions="predictions!.Predictors" Names="predictorNames" Scores="DisplayedPredictorScores" IsSeasonFinal="EffectiveSeasonFinalForDisplay" />
-                    </FluentCard>
-                </div>
-            }
-            else
-            {
-                <div class="section-title mt-0">的中数の推移</div>
-                <FluentStack Orientation="Microsoft.FluentUI.AspNetCore.Components.Orientation.Horizontal" HorizontalAlignment="HorizontalAlignment.SpaceBetween" VerticalAlignment="VerticalAlignment.Center" Wrap="true" Class="mb-3">
-                    <FluentStack Orientation="Microsoft.FluentUI.AspNetCore.Components.Orientation.Horizontal" HorizontalGap="4" Wrap="true">
-                        @foreach (var tab in Tabs)
-                        {
-                            <FluentButton Appearance="@(tab.Key == selectedTab ? ButtonAppearance.Primary : ButtonAppearance.Outline)" OnClick="@(() => SelectTab(tab.Key))">
-                                @tab.Value
-                            </FluentButton>
-                        }
-                    </FluentStack>
-                    <FluentStack Orientation="Microsoft.FluentUI.AspNetCore.Components.Orientation.Horizontal" HorizontalGap="4" Wrap="true">
-                        @foreach (var range in RangeOptions)
-                        {
-                            <FluentButton Appearance="@(range.Days == selectedRangeDays ? ButtonAppearance.Primary : ButtonAppearance.Outline)" OnClick="@(() => selectedRangeDays = range.Days)">
-                                @range.Label
-                            </FluentButton>
-                        }
-                    </FluentStack>
-                </FluentStack>
+                        @* セ・パの予想表を横に並べると上の順位表の高さの違いで行がズレるため、
+                           デスクトップでは1つにまとめた表を使う。この結合表はセ・パ2段見出しの構成が
+                           FluentDataGridと相性が悪く、素の<table>のまま(AnswerTable/PredictionComparisonTable
+                           も同じ理由でFluentDataGridから素のtableへ戻している)。 *@
+                        <div class="prediction-table-desktop-only">
+                            <FluentCard>
+                                <CombinedPredictionComparisonTable CentralEntries="CentralEntries" PacificEntries="PacificEntries" Predictions="predictions.Predictors" Names="predictorNames" Scores="DisplayedPredictorScores" IsSeasonFinal="EffectiveSeasonFinalForDisplay" />
+                            </FluentCard>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="section-title mt-0">的中数の推移</div>
+                        <FluentStack Orientation="Microsoft.FluentUI.AspNetCore.Components.Orientation.Horizontal" HorizontalAlignment="HorizontalAlignment.SpaceBetween" VerticalAlignment="VerticalAlignment.Center" Wrap="true" Class="mb-3">
+                            <FluentStack Orientation="Microsoft.FluentUI.AspNetCore.Components.Orientation.Horizontal" HorizontalGap="4" Wrap="true">
+                                @foreach (var tab in Tabs)
+                                {
+                                    <FluentButton Appearance="@(tab.Key == selectedTab ? ButtonAppearance.Primary : ButtonAppearance.Outline)" OnClick="@(() => SelectTab(tab.Key))">
+                                        @tab.Value
+                                    </FluentButton>
+                                }
+                            </FluentStack>
+                            <FluentStack Orientation="Microsoft.FluentUI.AspNetCore.Components.Orientation.Horizontal" HorizontalGap="4" Wrap="true">
+                                @foreach (var range in RangeOptions)
+                                {
+                                    <FluentButton Appearance="@(range.Days == selectedRangeDays ? ButtonAppearance.Primary : ButtonAppearance.Outline)" OnClick="@(() => selectedRangeDays = range.Days)">
+                                        @range.Label
+                                    </FluentButton>
+                                }
+                            </FluentStack>
+                        </FluentStack>
 
-                <div class="mb-4">
-                    <ApexChart TItem="ScoreSnapshot" Title="@Tabs[selectedTab]" Options="chartOptions" @key="(selectedTab, selectedRangeDays, ThemeState.IsDark)">
-                        @for (var i = 0; i < PredictorIds.Count; i++)
-                        {
-                            var id = PredictorIds[i];
-                            var color = SeriesColorFor(i);
-                            var dashSpace = SeriesDashFor(i);
-                            var seriesName = NameFor(id) is { Length: > 0 } n ? $"#{id} {n}" : $"#{id}";
-                            <ApexPointSeries TItem="ScoreSnapshot"
-                                             Items="FilteredSnapshots"
-                                             Name="@seriesName"
-                                             SeriesType="SeriesType.Line"
-                                             Color="@color"
-                                             Stroke="@(new SeriesStroke { Color = color, Width = 2, DashSpace = dashSpace })"
-                                             XValue='s => s.Date.ToString("yyyy-MM-dd")'
-                                             YValue="s => (decimal)MatchesFor(s, id)" />
-                        }
-                    </ApexChart>
-                </div>
-            }
+                        <div class="mb-4">
+                            <ApexChart TItem="ScoreSnapshot" Title="@Tabs[selectedTab]" Options="chartOptions" @key="(selectedTab, selectedRangeDays, ThemeState.IsDark)">
+                                @for (var i = 0; i < PredictorIds.Count; i++)
+                                {
+                                    var id = PredictorIds[i];
+                                    var color = SeriesColorFor(i);
+                                    var dashSpace = SeriesDashFor(i);
+                                    var seriesName = NameFor(id) is { Length: > 0 } n ? $"#{id} {n}" : $"#{id}";
+                                    <ApexPointSeries TItem="ScoreSnapshot"
+                                                     Items="FilteredSnapshots"
+                                                     Name="@seriesName"
+                                                     SeriesType="SeriesType.Line"
+                                                     Color="@color"
+                                                     Stroke="@(new SeriesStroke { Color = color, Width = 2, DashSpace = dashSpace })"
+                                                     XValue='s => s.Date.ToString("yyyy-MM-dd")'
+                                                     YValue="s => (decimal)MatchesFor(s, id)" />
+                                }
+                            </ApexChart>
+                        </div>
+                    }
                 </div>
             }
         </div>
@@ -260,6 +260,10 @@
     // (試合のない日が1日挟まっても超えない程度の余裕を持たせている)。
     private const int StaleThresholdHours = 36;
 
+    // MemberNotNullWhenでコンパイラにHasData==trueならこの3フィールドが非nullだと伝える。
+    // これにより呼び出し側でpredictions!のようなnull免除演算子を使わずに済み、将来この判定条件が
+    // 緩められた場合もコンパイラが正しく警告を出してくれる。
+    [System.Diagnostics.CodeAnalysis.MemberNotNullWhen(true, nameof(standings), nameof(predictions), nameof(scores))]
     private bool HasData => standings is not null && predictions is not null && scores is not null && standings.Snapshots.Count > 0;
 
     private bool IsSelectedSeasonFinal => seasons.FirstOrDefault(s => s.Season == selectedSeason)?.IsFinal ?? false;

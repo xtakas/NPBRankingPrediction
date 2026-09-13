@@ -1,3 +1,4 @@
+@implements IAsyncDisposable
 @inject IThemeService ThemeService
 @inject ThemeState ThemeState
 @inject IJSRuntime JS
@@ -20,6 +21,9 @@
     // 「自動」ボタンは廃止したが、ユーザーが一度もライト/ダークを明示選択していない間は
     // 引き続きOS設定に追従させたい。そのため未選択時はSetThemeAsyncを呼ばずFluentUI側の
     // 既定(システム追従)のままにし、このトグルの押下表示だけ現在の解決結果に合わせる。
+    // OS設定が後から変わった場合(例: 夜間の自動ダークモード)も反映できるよう、
+    // FluentUIがbodyにdispatchする "themeChanged" イベントをJS側で購読している
+    // (wwwroot/js/theme-watch.js、詳細はそちらのコメント参照)。
     private static readonly (ThemeMode Mode, string Label)[] Options =
     [
         (ThemeMode.Light, "ライト"),
@@ -27,6 +31,9 @@
     ];
 
     private ThemeMode selectedMode = ThemeMode.Light;
+    private IJSObjectReference? module;
+    private IJSObjectReference? watcher;
+    private DotNetObjectReference<ThemeToggle>? dotNetRef;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -46,6 +53,21 @@
 
         ThemeState.SetDark(isDark);
         StateHasChanged();
+
+        dotNetRef = DotNetObjectReference.Create(this);
+        module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/theme-watch.js");
+        watcher = await module.InvokeAsync<IJSObjectReference>("watchThemeChanged", dotNetRef);
+    }
+
+    /// <summary>FluentUIが解決したダーク/ライトが変わるたびにJS側から呼ばれる(明示クリックによる
+    /// ものか、システム追従中のOS設定変化によるものかは区別しない。どちらの場合でも表示中の
+    /// 実際のテーマと一致させるのが正しいため)。</summary>
+    [JSInvokable]
+    public async Task OnBodyThemeChanged(bool isDark)
+    {
+        selectedMode = isDark ? ThemeMode.Dark : ThemeMode.Light;
+        ThemeState.SetDark(isDark);
+        await InvokeAsync(StateHasChanged);
     }
 
     private async Task SelectAsync(ThemeMode mode)
@@ -57,5 +79,28 @@
         await JS.InvokeVoidAsync("localStorage.setItem", StorageKey, value);
 
         ThemeState.SetDark(await ThemeService.IsDarkModeAsync());
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            if (watcher is not null)
+            {
+                await watcher.InvokeVoidAsync("dispose");
+                await watcher.DisposeAsync();
+            }
+
+            if (module is not null)
+            {
+                await module.DisposeAsync();
+            }
+        }
+        catch (JSDisconnectedException)
+        {
+            // ページ遷移・タブクローズ時にJS側が既に破棄済みの場合は無視してよい。
+        }
+
+        dotNetRef?.Dispose();
     }
 }
