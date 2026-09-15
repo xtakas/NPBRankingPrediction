@@ -6168,6 +6168,54 @@
       "homeScore": 0,
       "awayScore": 6,
       "gameId": "scores/2026/0914/t-d-24"
+    },
+    {
+      "date": "2026-09-15",
+      "homeTeamCode": "\u30AA\u30EA\u30C3\u30AF\u30B9",
+      "awayTeamCode": "\u30BD\u30D5\u30C8\u30D0\u30F3\u30AF",
+      "homeScore": 3,
+      "awayScore": 5,
+      "gameId": "scores/2026/0915/b-h-21"
+    },
+    {
+      "date": "2026-09-15",
+      "homeTeamCode": "DeNA",
+      "awayTeamCode": "\u5DE8\u4EBA",
+      "homeScore": 13,
+      "awayScore": 2,
+      "gameId": "scores/2026/0915/db-g-24"
+    },
+    {
+      "date": "2026-09-15",
+      "homeTeamCode": "\u697D\u5929",
+      "awayTeamCode": "\u897F\u6B66",
+      "homeScore": 1,
+      "awayScore": 0,
+      "gameId": "scores/2026/0915/e-l-23"
+    },
+    {
+      "date": "2026-09-15",
+      "homeTeamCode": "\u65E5\u672C\u30CF\u30E0",
+      "awayTeamCode": "\u30ED\u30C3\u30C6",
+      "homeScore": 6,
+      "awayScore": 7,
+      "gameId": "scores/2026/0915/f-m-22"
+    },
+    {
+      "date": "2026-09-15",
+      "homeTeamCode": "\u30E4\u30AF\u30EB\u30C8",
+      "awayTeamCode": "\u5E83\u5CF6",
+      "homeScore": 4,
+      "awayScore": 9,
+      "gameId": "scores/2026/0915/s-c-24"
+    },
+    {
+      "date": "2026-09-15",
+      "homeTeamCode": "\u962A\u795E",
+      "awayTeamCode": "\u4E2D\u65E5",
+      "homeScore": 1,
+      "awayScore": 4,
+      "gameId": "scores/2026/0915/t-d-25"
     }
   ]
 }
