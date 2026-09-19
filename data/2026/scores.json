@@ -10268,6 +10268,74 @@
           "isCarryoverClear": false
         }
       ]
+    },
+    {
+      "date": "2026-09-19",
+      "predictors": [
+        {
+          "predictorId": "56",
+          "centralMatches": 1,
+          "pacificMatches": 0,
+          "totalMatches": 1,
+          "isCarryoverClear": false
+        },
+        {
+          "predictorId": "22",
+          "centralMatches": 3,
+          "pacificMatches": 0,
+          "totalMatches": 3,
+          "isCarryoverClear": false
+        },
+        {
+          "predictorId": "19",
+          "centralMatches": 1,
+          "pacificMatches": 1,
+          "totalMatches": 2,
+          "isCarryoverClear": false
+        },
+        {
+          "predictorId": "25",
+          "centralMatches": 2,
+          "pacificMatches": 0,
+          "totalMatches": 2,
+          "isCarryoverClear": false
+        },
+        {
+          "predictorId": "2",
+          "centralMatches": 3,
+          "pacificMatches": 1,
+          "totalMatches": 4,
+          "isCarryoverClear": false
+        },
+        {
+          "predictorId": "3",
+          "centralMatches": 0,
+          "pacificMatches": 2,
+          "totalMatches": 2,
+          "isCarryoverClear": false
+        },
+        {
+          "predictorId": "24",
+          "centralMatches": 0,
+          "pacificMatches": 1,
+          "totalMatches": 1,
+          "isCarryoverClear": false
+        },
+        {
+          "predictorId": "52",
+          "centralMatches": 0,
+          "pacificMatches": 4,
+          "totalMatches": 4,
+          "isCarryoverClear": false
+        },
+        {
+          "predictorId": "7",
+          "centralMatches": 2,
+          "pacificMatches": 0,
+          "totalMatches": 2,
+          "isCarryoverClear": false
+        }
+      ]
     }
   ]
 }
