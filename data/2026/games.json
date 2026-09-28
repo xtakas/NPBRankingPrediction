@@ -6640,6 +6640,30 @@
       "homeScore": 6,
       "awayScore": 1,
       "gameId": "scores/2026/0927/m-f-23"
+    },
+    {
+      "date": "2026-09-28",
+      "homeTeamCode": "DeNA",
+      "awayTeamCode": "\u5E83\u5CF6",
+      "homeScore": 3,
+      "awayScore": 4,
+      "gameId": "scores/2026/0928/db-c-25"
+    },
+    {
+      "date": "2026-09-28",
+      "homeTeamCode": "\u897F\u6B66",
+      "awayTeamCode": "\u697D\u5929",
+      "homeScore": 2,
+      "awayScore": 4,
+      "gameId": "scores/2026/0928/l-e-25"
+    },
+    {
+      "date": "2026-09-28",
+      "homeTeamCode": "\u30ED\u30C3\u30C6",
+      "awayTeamCode": "\u65E5\u672C\u30CF\u30E0",
+      "homeScore": 3,
+      "awayScore": 8,
+      "gameId": "scores/2026/0928/m-f-24"
     }
   ]
 }
