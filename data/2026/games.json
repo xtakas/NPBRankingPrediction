@@ -6688,6 +6688,22 @@
       "homeScore": 2,
       "awayScore": 1,
       "gameId": "scores/2026/0929/l-b-25"
+    },
+    {
+      "date": "2026-09-30",
+      "homeTeamCode": "\u697D\u5929",
+      "awayTeamCode": "\u30ED\u30C3\u30C6",
+      "homeScore": 3,
+      "awayScore": 0,
+      "gameId": "scores/2026/0930/e-m-24"
+    },
+    {
+      "date": "2026-09-30",
+      "homeTeamCode": "\u962A\u795E",
+      "awayTeamCode": "\u30E4\u30AF\u30EB\u30C8",
+      "homeScore": 5,
+      "awayScore": 0,
+      "gameId": "scores/2026/0930/t-s-24"
     }
   ]
 }
