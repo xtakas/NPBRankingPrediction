@@ -21336,6 +21336,133 @@
           "isRankConfirmed": true
         }
       ]
+    },
+    {
+      "date": "2026-10-06",
+      "central": [
+        {
+          "teamCode": "\u962A\u795E",
+          "rank": 1,
+          "wins": 78,
+          "losses": 61,
+          "draws": 2,
+          "winPercentage": 0.5611510791366906,
+          "gamesBehind": 0,
+          "isRankConfirmed": true
+        },
+        {
+          "teamCode": "\u5DE8\u4EBA",
+          "rank": 2,
+          "wins": 76,
+          "losses": 64,
+          "draws": 3,
+          "winPercentage": 0.5428571428571428,
+          "gamesBehind": 2.5,
+          "isRankConfirmed": true
+        },
+        {
+          "teamCode": "DeNA",
+          "rank": 3,
+          "wins": 71,
+          "losses": 69,
+          "draws": 3,
+          "winPercentage": 0.5071428571428571,
+          "gamesBehind": 7.5,
+          "isRankConfirmed": true
+        },
+        {
+          "teamCode": "\u5E83\u5CF6",
+          "rank": 4,
+          "wins": 61,
+          "losses": 77,
+          "draws": 4,
+          "winPercentage": 0.4420289855072464,
+          "gamesBehind": 16.5,
+          "isRankConfirmed": true
+        },
+        {
+          "teamCode": "\u30E4\u30AF\u30EB\u30C8",
+          "rank": 5,
+          "wins": 60,
+          "losses": 80,
+          "draws": 2,
+          "winPercentage": 0.42857142857142855,
+          "gamesBehind": 18.5,
+          "isRankConfirmed": false
+        },
+        {
+          "teamCode": "\u4E2D\u65E5",
+          "rank": 6,
+          "wins": 60,
+          "losses": 81,
+          "draws": 2,
+          "winPercentage": 0.425531914893617,
+          "gamesBehind": 19,
+          "isRankConfirmed": false
+        }
+      ],
+      "pacific": [
+        {
+          "teamCode": "\u30BD\u30D5\u30C8\u30D0\u30F3\u30AF",
+          "rank": 1,
+          "wins": 91,
+          "losses": 49,
+          "draws": 3,
+          "winPercentage": 0.65,
+          "gamesBehind": 0,
+          "isRankConfirmed": true
+        },
+        {
+          "teamCode": "\u897F\u6B66",
+          "rank": 2,
+          "wins": 79,
+          "losses": 60,
+          "draws": 4,
+          "winPercentage": 0.5683453237410072,
+          "gamesBehind": 11.5,
+          "isRankConfirmed": true
+        },
+        {
+          "teamCode": "\u65E5\u672C\u30CF\u30E0",
+          "rank": 3,
+          "wins": 78,
+          "losses": 62,
+          "draws": 3,
+          "winPercentage": 0.5571428571428572,
+          "gamesBehind": 13,
+          "isRankConfirmed": true
+        },
+        {
+          "teamCode": "\u30AA\u30EA\u30C3\u30AF\u30B9",
+          "rank": 4,
+          "wins": 65,
+          "losses": 76,
+          "draws": 2,
+          "winPercentage": 0.46099290780141844,
+          "gamesBehind": 26.5,
+          "isRankConfirmed": true
+        },
+        {
+          "teamCode": "\u30ED\u30C3\u30C6",
+          "rank": 5,
+          "wins": 63,
+          "losses": 77,
+          "draws": 3,
+          "winPercentage": 0.45,
+          "gamesBehind": 28,
+          "isRankConfirmed": true
+        },
+        {
+          "teamCode": "\u697D\u5929",
+          "rank": 6,
+          "wins": 58,
+          "losses": 84,
+          "draws": 1,
+          "winPercentage": 0.4084507042253521,
+          "gamesBehind": 34,
+          "isRankConfirmed": true
+        }
+      ]
     }
   ]
 }
