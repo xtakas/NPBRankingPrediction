@@ -6848,6 +6848,14 @@
       "homeScore": 2,
       "awayScore": 1,
       "gameId": "scores/2026/1006/t-c-24"
+    },
+    {
+      "date": "2026-10-07",
+      "homeTeamCode": "\u962A\u795E",
+      "awayTeamCode": "\u5E83\u5CF6",
+      "homeScore": 2,
+      "awayScore": 1,
+      "gameId": "scores/2026/1007/t-c-25"
     }
   ]
 }
